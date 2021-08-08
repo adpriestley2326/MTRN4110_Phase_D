@@ -1,103 +1,103 @@
-[z5207265_MTRN4110_PhaseB] Reading in map from ../../MapBuilt.txt...
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] | v             |                   |
-[z5207265_MTRN4110_PhaseB]       ---                 ---        
-[z5207265_MTRN4110_PhaseB] |           |           |   |       |
-[z5207265_MTRN4110_PhaseB]   ---             --- ---     ---    
-[z5207265_MTRN4110_PhaseB] |       |   |   | x                 |
-[z5207265_MTRN4110_PhaseB]           ---     --- --- ---        
-[z5207265_MTRN4110_PhaseB] |   |                   |           |
-[z5207265_MTRN4110_PhaseB]           ---         ---     ---    
-[z5207265_MTRN4110_PhaseB] |   |           |           |       |
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] Map read in!
-[z5207265_MTRN4110_PhaseB] Finding shortest paths...
-[z5207265_MTRN4110_PhaseB] Path - 1:
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] | v   15  14  13| 10  9   8   7   6 |
-[z5207265_MTRN4110_PhaseB]      ---                 ---         
-[z5207265_MTRN4110_PhaseB] |           | 12  11    |   |     5 |
-[z5207265_MTRN4110_PhaseB]  ---             --- ---     ---     
-[z5207265_MTRN4110_PhaseB] |       |   |   | 0   1   2   3   4 |
-[z5207265_MTRN4110_PhaseB]          ---     --- --- ---         
-[z5207265_MTRN4110_PhaseB] |   |                   |           |
-[z5207265_MTRN4110_PhaseB]          ---         ---     ---     
-[z5207265_MTRN4110_PhaseB] |   |           |           |       |
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] Path - 2:
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] | v   15  14  13| 10  9   8   7     |
-[z5207265_MTRN4110_PhaseB]      ---                 ---         
-[z5207265_MTRN4110_PhaseB] |           | 12  11    |   | 6   5 |
-[z5207265_MTRN4110_PhaseB]  ---             --- ---     ---     
-[z5207265_MTRN4110_PhaseB] |       |   |   | 0   1   2   3   4 |
-[z5207265_MTRN4110_PhaseB]          ---     --- --- ---         
-[z5207265_MTRN4110_PhaseB] |   |                   |           |
-[z5207265_MTRN4110_PhaseB]          ---         ---     ---     
-[z5207265_MTRN4110_PhaseB] |   |           |           |       |
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] Path - 3:
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] | v   15  14  13|     9   8   7   6 |
-[z5207265_MTRN4110_PhaseB]      ---                 ---         
-[z5207265_MTRN4110_PhaseB] |           | 12  11  10|   |     5 |
-[z5207265_MTRN4110_PhaseB]  ---             --- ---     ---     
-[z5207265_MTRN4110_PhaseB] |       |   |   | 0   1   2   3   4 |
-[z5207265_MTRN4110_PhaseB]          ---     --- --- ---         
-[z5207265_MTRN4110_PhaseB] |   |                   |           |
-[z5207265_MTRN4110_PhaseB]          ---         ---     ---     
-[z5207265_MTRN4110_PhaseB] |   |           |           |       |
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] Path - 4:
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] | v   15  14  13|     9   8   7     |
-[z5207265_MTRN4110_PhaseB]      ---                 ---         
-[z5207265_MTRN4110_PhaseB] |           | 12  11  10|   | 6   5 |
-[z5207265_MTRN4110_PhaseB]  ---             --- ---     ---     
-[z5207265_MTRN4110_PhaseB] |       |   |   | 0   1   2   3   4 |
-[z5207265_MTRN4110_PhaseB]          ---     --- --- ---         
-[z5207265_MTRN4110_PhaseB] |   |                   |           |
-[z5207265_MTRN4110_PhaseB]          ---         ---     ---     
-[z5207265_MTRN4110_PhaseB] |   |           |           |       |
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] Path - 5:
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] | v   15  14  13|                   |
-[z5207265_MTRN4110_PhaseB]      ---                 ---         
-[z5207265_MTRN4110_PhaseB] |           | 12        |   |       |
-[z5207265_MTRN4110_PhaseB]  ---             --- ---     ---     
-[z5207265_MTRN4110_PhaseB] |       |   | 11| 0   1   2   3     |
-[z5207265_MTRN4110_PhaseB]          ---     --- --- ---         
-[z5207265_MTRN4110_PhaseB] |   |         10  9     | 5   4     |
-[z5207265_MTRN4110_PhaseB]          ---         ---     ---     
-[z5207265_MTRN4110_PhaseB] |   |           | 8   7   6 |       |
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] Path - 6:
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] | v             |                   |
-[z5207265_MTRN4110_PhaseB]      ---                 ---         
-[z5207265_MTRN4110_PhaseB] | 15  14    |           |   |       |
-[z5207265_MTRN4110_PhaseB]  ---             --- ---     ---     
-[z5207265_MTRN4110_PhaseB] |     13|   |   | 0   1   2   3     |
-[z5207265_MTRN4110_PhaseB]          ---     --- --- ---         
-[z5207265_MTRN4110_PhaseB] |   | 12  11  10  9     | 5   4     |
-[z5207265_MTRN4110_PhaseB]          ---         ---     ---     
-[z5207265_MTRN4110_PhaseB] |   |           | 8   7   6 |       |
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] 6 shortest paths found!
-[z5207265_MTRN4110_PhaseB] Finding shortest path with least turns...
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] | v   15  14  13| 10  9   8   7   6 |
-[z5207265_MTRN4110_PhaseB]      ---                 ---         
-[z5207265_MTRN4110_PhaseB] |           | 12  11    |   |     5 |
-[z5207265_MTRN4110_PhaseB]  ---             --- ---     ---     
-[z5207265_MTRN4110_PhaseB] |       |   |   | 0   1   2   3   4 |
-[z5207265_MTRN4110_PhaseB]          ---     --- --- ---         
-[z5207265_MTRN4110_PhaseB] |   |                   |           |
-[z5207265_MTRN4110_PhaseB]          ---         ---     ---     
-[z5207265_MTRN4110_PhaseB] |   |           |           |       |
-[z5207265_MTRN4110_PhaseB]  --- --- --- --- --- --- --- --- --- 
-[z5207265_MTRN4110_PhaseB] Shortest path with least turns found!
-[z5207265_MTRN4110_PhaseB] Path Plan (23 steps): 00SLFFFRFLFLFRFFFFRFFRFFFF
-[z5207265_MTRN4110_PhaseB] Writing path plan to ../../PathPlan.txt...
-[z5207265_MTRN4110_PhaseB] Path plan written to ../../PathPlan.txt!
+[MTRN4110_PhaseD] Reading in map from ../../MapBuilt.txt...
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] | v             |                   |
+[MTRN4110_PhaseD]       ---                 ---        
+[MTRN4110_PhaseD] |           |           |   |       |
+[MTRN4110_PhaseD]   ---             --- ---     ---    
+[MTRN4110_PhaseD] |       |   |   | x                 |
+[MTRN4110_PhaseD]           ---     --- --- ---        
+[MTRN4110_PhaseD] |   |                   |           |
+[MTRN4110_PhaseD]           ---         ---     ---    
+[MTRN4110_PhaseD] |   |           |           |       |
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] Map read in!
+[MTRN4110_PhaseD] Finding shortest paths...
+[MTRN4110_PhaseD] Path - 1:
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] | v   15  14  13| 10  9   8   7   6 |
+[MTRN4110_PhaseD]      ---                 ---         
+[MTRN4110_PhaseD] |           | 12  11    |   |     5 |
+[MTRN4110_PhaseD]  ---             --- ---     ---     
+[MTRN4110_PhaseD] |       |   |   | 0   1   2   3   4 |
+[MTRN4110_PhaseD]          ---     --- --- ---         
+[MTRN4110_PhaseD] |   |                   |           |
+[MTRN4110_PhaseD]          ---         ---     ---     
+[MTRN4110_PhaseD] |   |           |           |       |
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] Path - 2:
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] | v   15  14  13| 10  9   8   7     |
+[MTRN4110_PhaseD]      ---                 ---         
+[MTRN4110_PhaseD] |           | 12  11    |   | 6   5 |
+[MTRN4110_PhaseD]  ---             --- ---     ---     
+[MTRN4110_PhaseD] |       |   |   | 0   1   2   3   4 |
+[MTRN4110_PhaseD]          ---     --- --- ---         
+[MTRN4110_PhaseD] |   |                   |           |
+[MTRN4110_PhaseD]          ---         ---     ---     
+[MTRN4110_PhaseD] |   |           |           |       |
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] Path - 3:
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] | v   15  14  13|     9   8   7   6 |
+[MTRN4110_PhaseD]      ---                 ---         
+[MTRN4110_PhaseD] |           | 12  11  10|   |     5 |
+[MTRN4110_PhaseD]  ---             --- ---     ---     
+[MTRN4110_PhaseD] |       |   |   | 0   1   2   3   4 |
+[MTRN4110_PhaseD]          ---     --- --- ---         
+[MTRN4110_PhaseD] |   |                   |           |
+[MTRN4110_PhaseD]          ---         ---     ---     
+[MTRN4110_PhaseD] |   |           |           |       |
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] Path - 4:
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] | v   15  14  13|     9   8   7     |
+[MTRN4110_PhaseD]      ---                 ---         
+[MTRN4110_PhaseD] |           | 12  11  10|   | 6   5 |
+[MTRN4110_PhaseD]  ---             --- ---     ---     
+[MTRN4110_PhaseD] |       |   |   | 0   1   2   3   4 |
+[MTRN4110_PhaseD]          ---     --- --- ---         
+[MTRN4110_PhaseD] |   |                   |           |
+[MTRN4110_PhaseD]          ---         ---     ---     
+[MTRN4110_PhaseD] |   |           |           |       |
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] Path - 5:
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] | v   15  14  13|                   |
+[MTRN4110_PhaseD]      ---                 ---         
+[MTRN4110_PhaseD] |           | 12        |   |       |
+[MTRN4110_PhaseD]  ---             --- ---     ---     
+[MTRN4110_PhaseD] |       |   | 11| 0   1   2   3     |
+[MTRN4110_PhaseD]          ---     --- --- ---         
+[MTRN4110_PhaseD] |   |         10  9     | 5   4     |
+[MTRN4110_PhaseD]          ---         ---     ---     
+[MTRN4110_PhaseD] |   |           | 8   7   6 |       |
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] Path - 6:
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] | v             |                   |
+[MTRN4110_PhaseD]      ---                 ---         
+[MTRN4110_PhaseD] | 15  14    |           |   |       |
+[MTRN4110_PhaseD]  ---             --- ---     ---     
+[MTRN4110_PhaseD] |     13|   |   | 0   1   2   3     |
+[MTRN4110_PhaseD]          ---     --- --- ---         
+[MTRN4110_PhaseD] |   | 12  11  10  9     | 5   4     |
+[MTRN4110_PhaseD]          ---         ---     ---     
+[MTRN4110_PhaseD] |   |           | 8   7   6 |       |
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] 6 shortest paths found!
+[MTRN4110_PhaseD] Finding shortest path with least turns...
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] | v   15  14  13| 10  9   8   7   6 |
+[MTRN4110_PhaseD]      ---                 ---         
+[MTRN4110_PhaseD] |           | 12  11    |   |     5 |
+[MTRN4110_PhaseD]  ---             --- ---     ---     
+[MTRN4110_PhaseD] |       |   |   | 0   1   2   3   4 |
+[MTRN4110_PhaseD]          ---     --- --- ---         
+[MTRN4110_PhaseD] |   |                   |           |
+[MTRN4110_PhaseD]          ---         ---     ---     
+[MTRN4110_PhaseD] |   |           |           |       |
+[MTRN4110_PhaseD]  --- --- --- --- --- --- --- --- --- 
+[MTRN4110_PhaseD] Shortest path with least turns found!
+[MTRN4110_PhaseD] Path Plan (23 steps): 00SLFFFRFLFLFRFFFFRFFRFFFF
+[MTRN4110_PhaseD] Writing path plan to ../../PathPlan.txt...
+[MTRN4110_PhaseD] Path plan written to ../../PathPlan.txt!
