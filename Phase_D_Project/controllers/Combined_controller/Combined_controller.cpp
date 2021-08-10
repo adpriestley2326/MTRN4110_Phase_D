@@ -72,15 +72,24 @@ class HatTrickController {
   const std::string actionList = "FLR";
   const unsigned char *groundCamImage;
 
-  // Variables to tune
-  double MAX_OMEGA = MAX_SPEED/3.0;
-  int WALL_THRESHOLD = 1200;
+  // Constants to tune
+  const double MAX_OMEGA = MAX_SPEED/3.0;
+  const int WALL_THRESHOLD = 1200;
   
-  double kp = 5;
-  double kpw = 3; // multiplier on bearing error
-  double acceptablePositionError = 0.01;
-  double acceptableRotationError = 0.5*M_PI/180.0;
-  double acceptableRotationError2 = 3*M_PI/180.0; // used for enabling forward movement to next target
+  const double kp = 5;
+  const double kpw = 3; // multiplier on bearing error
+  const double acceptablePositionError = 0.01;
+  const double acceptableRotationError = 0.5*M_PI/180.0;
+  const double acceptableRotationError2 = 3*M_PI/180.0; // used for enabling forward movement to next target
+  
+  // EKF Stuff
+  Matrix<double, 2, 2> ekfR;
+  Matrix<double, 3, 3> ekfQ;
+  Matrix<double, 3, 3> ekfP = MatrixXd::Zero(3,3);
+  Matrix<double, 3, 3> ekfJ;
+  Matrix<double, 3, 3> ekfFk;
+  Matrix<double, 3, 3> ekfPu;
+  Matrix<double, 2, 3> ekfH;
 
   // Internal Variables
   Robot *robot;
@@ -716,6 +725,16 @@ HatTrickController::HatTrickController(std::string motionPlan) {
   invKMatrix << WHEEL_RADIUS/2,            WHEEL_RADIUS/2,
                 0,                         0,
                 -WHEEL_RADIUS/AXLE_LENGTH, WHEEL_RADIUS/AXLE_LENGTH;
+                
+  // EKF
+  // Uncertainty in observations
+  ekfR << pow(0.01,2), 0, 
+          0, pow(0.05,2);
+  // Uncertainty in model prediction
+  ekfQ = MatrixXd::Zero(3,3);
+  ekfQ(0,0) = pow(0.01*TIME_STEP/1000.0, 2);
+  ekfQ(1,1) = ekfQ(0,0);
+  ekfQ(2,2) = MAX_OMEGA*ekfQ(0,0);
 
 }
 
@@ -763,6 +782,7 @@ void HatTrickController::doUpdate() {
   this->predictionStep();
   this->updateStepCamera();
   this->updateStepDistanceSensors();
+  
   this->updateWheelVelocities();
   if (idleCount >= 1) {
     motionPlanStep++;
@@ -940,7 +960,13 @@ void HatTrickController::updateStepDistanceSensors() {
       else eY += WALL_THICK/2;
       pose(1) += dsKPosition*(eY - (p1(1)/2 + p2(1)/2));
     }
-    
+    // // EKF Pose Updater
+    // Matrix<double, 2, 2> ekfS;
+    // ekfS = ekfR + ekfH*ekfP*ekfH.transpose();
+    // Matrix<double, 3, 2> ekfK;
+    // ekfK = ekfP*ekfH.transpose()*ekfS.inverse();
+    // pose = pose + ekfK*ekfZ;
+    // ekfP = ekfP-ekfK*ekfH*ekfP;
   }
 }
 
