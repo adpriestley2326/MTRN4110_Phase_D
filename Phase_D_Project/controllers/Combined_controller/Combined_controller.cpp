@@ -80,7 +80,7 @@ class HatTrickController {
   const double kpw = 3; // multiplier on bearing error
   const double acceptablePositionError = 0.01;
   const double acceptableRotationError = 0.5*M_PI/180.0;
-  const double acceptableRotationError2 = 3*M_PI/180.0; // used for enabling forward movement to next target
+  const double acceptableRotationError2 = 0.5*M_PI/180.0; // used for enabling forward movement to next target
   
   // EKF Stuff
   Matrix<double, 2, 2> ekfR;
@@ -90,6 +90,7 @@ class HatTrickController {
   Matrix<double, 3, 3> ekfFk;
   Matrix<double, 3, 3> ekfPu;
   Matrix<double, 2, 3> ekfH;
+  Matrix<double, 2, 1> ekfZ;
 
   // Internal Variables
   Robot *robot;
@@ -729,7 +730,7 @@ HatTrickController::HatTrickController(std::string motionPlan) {
   // EKF
   // Uncertainty in observations
   ekfR << pow(0.01,2), 0, 
-          0, pow(0.05,2);
+          0, pow(0.01,2);
   // Uncertainty in model prediction
   ekfQ = MatrixXd::Zero(3,3);
   ekfQ(0,0) = pow(0.01*TIME_STEP/1000.0, 2);
@@ -850,6 +851,18 @@ void HatTrickController::predictionStep() {
   pose(0) += forwardVelocity*cos(pose(2))*dt;
   pose(1) += forwardVelocity*sin(pose(2))*dt;
   pose(2) += WHEEL_RADIUS*(-setLeftVelocity + setRightVelocity)/(AXLE_LENGTH) * dt;
+  ekfJ << 1, 0, dt*forwardVelocity*sin(pose(2)),
+          0, 1, dt*forwardVelocity*cos(pose(2)),
+          0, 0, 1;
+  // Covariance of process model
+  ekfP = ekfJ*ekfP*ekfJ.transpose() + ekfQ;        
+  // Covariance of process model inputs
+  ekfFk << dt*cos(pose(2)), 0,
+           dt*sin(pose(2)), 0,
+           0, dt;
+  ekfPu << pow(MAX_SPEED*WHEEL_RADIUS*2*0.05, 2), 0,
+           0, pow(MAX_OMEGA*WHEEL_RADIUS*2*0.05/WHEEL_RADIUS, 2);
+  ekfP = ekfP + ekfFk*ekfPu*ekfFk.transpose();
 }
 
 void HatTrickController::updateStepCamera() {
@@ -930,7 +943,7 @@ void HatTrickController::updateStepDistanceSensors() {
   // with cardinal directions to avoid corners being misidentified as edges.
   double headingTest = fmod(pose(2),M_PI/2);
   if (headingTest < 0) headingTest += M_PI/2;
-  for (int d = 0; d < 4 && abs(M_PI/4 - headingTest) > 40*M_PI/180.0; d++) {
+  for (int d = 0; d < 4 && abs(M_PI/4 - headingTest) > 35*M_PI/180.0; d++) {
     // can't estimate well with only one ray
     if (dsValues[2*d] ==  DS_RANGE || dsValues[2*d+1] == DS_RANGE) continue;
     p1(0) = pose(0) + dsValues[2*d]*cos(pose(2) + dsRotation[2*d]);
@@ -939,34 +952,41 @@ void HatTrickController::updateStepDistanceSensors() {
     p2(1) = pose(1) + dsValues[2*d+1]*sin(pose(2) + dsRotation[2*d+1]);
     
     // Adjust rotation 
-    errorRotation = 0 - (atan2(p2(1)-p1(1), p2(0)-p1(0)) - M_PI/2 - dsRotation[2*d]/2 - dsRotation[2*d+1]/2 - pose(2));
+    errorRotation = atan2(p2(1)-p1(1), p2(0)-p1(0)) - M_PI/2 - dsRotation[2*d]/2 - dsRotation[2*d+1]/2 - pose(2);
     // Make error between -pi and pi
     errorRotation = fmod(errorRotation + M_PI, 2*M_PI);
     if (errorRotation < 0) errorRotation += 2*M_PI;
     errorRotation -= M_PI;
-    pose(2) += dsKRotation*errorRotation;
+    
     
     // Adjust position
     int dir = ((int) round((pose(2) + dsRotation[2*d]/2 + dsRotation[2*d+1]/2)*2/M_PI))%4;
     if (dir < 0) dir += 4;
+    Matrix<double, 2, 1> ekfY;
     if (dir % 2 == 0) { // Columns, x
       double eX = round((p1(0)/2 + p2(0)/2 - CELL_WIDTH/2)/CELL_WIDTH)*CELL_WIDTH + CELL_WIDTH/2;
       if (pose(0) < eX)  eX -= WALL_THICK/2;
       else eX += WALL_THICK/2;
-      pose(0) += dsKPosition*(eX - (p1(0)/2 + p2(0)/2));
+      double errorX = (eX - (p1(0)/2 + p2(0)/2)) ;
+      ekfH << 1, 0, -dsValues[2*d]*sin(pose(2) + dsRotation[2*d])/2 - dsValues[2*d+1]*sin(pose(2) + dsRotation[2*d+1])/2,
+              0, 0, -1;
+      ekfZ << errorX, errorRotation;     
     } else { // Rows, y
       double eY = round((p1(1)/2 + p2(1)/2 + CELL_WIDTH/2)/CELL_WIDTH)*CELL_WIDTH - CELL_WIDTH/2;
       if (pose(1) < eY)  eY -= WALL_THICK/2;
       else eY += WALL_THICK/2;
-      pose(1) += dsKPosition*(eY - (p1(1)/2 + p2(1)/2));
+      double errorY = (eY - (p1(1)/2 + p2(1)/2));
+      ekfH << 0, 1, dsValues[2*d]*cos(pose(2) + dsRotation[2*d])/2 + pose(1) + dsValues[2*d+1]*cos(pose(2) + dsRotation[2*d+1])/2,
+              0, 0, -1;
+      ekfZ << errorY, errorRotation;
     }
-    // // EKF Pose Updater
-    // Matrix<double, 2, 2> ekfS;
-    // ekfS = ekfR + ekfH*ekfP*ekfH.transpose();
-    // Matrix<double, 3, 2> ekfK;
-    // ekfK = ekfP*ekfH.transpose()*ekfS.inverse();
-    // pose = pose + ekfK*ekfZ;
-    // ekfP = ekfP-ekfK*ekfH*ekfP;
+    // EKF Pose Updater
+    Matrix<double, 2, 2> ekfS;
+    ekfS = ekfR + ekfH*ekfP*ekfH.transpose();
+    Matrix<double, 3, 2> ekfK;
+    ekfK = ekfP*ekfH.transpose()*ekfS.inverse();
+    pose = pose + ekfK*ekfZ;
+    ekfP = ekfP-ekfK*ekfH*ekfP;
   }
 }
 
