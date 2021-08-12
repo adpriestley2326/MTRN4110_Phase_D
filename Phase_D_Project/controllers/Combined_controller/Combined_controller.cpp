@@ -58,7 +58,7 @@ class HatTrickController {
   const std::string MOTION_PLAN_FILE_NAME = "../../PathPlan.txt";
   const std::string MOTION_EXECUTION_FILE_NAME = "../../MotionExecution.csv";
   const std::string MESSAGE_PREFIX = "[MTRN4110_PhaseD] ";
-  const int TIME_STEP = 64;
+  const int TIME_STEP = 32;
   const double CELL_WIDTH = 0.165;
   const double WHEEL_RADIUS = 0.02;
   const double AXLE_LENGTH = 0.056*1.003;
@@ -73,14 +73,14 @@ class HatTrickController {
   const unsigned char *groundCamImage;
 
   // Constants to tune
-  const double MAX_OMEGA = MAX_SPEED/3.0;
+  const double MAX_OMEGA = 6.28/2;
   const int WALL_THRESHOLD = 1200;
   
-  const double kp = 5;
-  const double kpw = 3; // multiplier on bearing error
+  const double kp = 15;
+  const double kpw = 5; // multiplier on bearing error
   const double acceptablePositionError = 0.01;
-  const double acceptableRotationError = 0.5*M_PI/180.0;
-  const double acceptableRotationError2 = 0.5*M_PI/180.0; // used for enabling forward movement to next target
+  const double acceptableRotationError = 15*M_PI/180.0;
+  const double acceptableRotationError2 = 35*M_PI/180.0; // used for enabling forward movement to next target
   
   // EKF Stuff
   Matrix<double, 2, 2> ekfR;
@@ -98,6 +98,7 @@ class HatTrickController {
   std::string motionPlan;
   Matrix<double, 3, 1> pose;
   Matrix<double, 3, 1> target;
+  Matrix<double, 3, 1> targetCentre;
   Matrix<double, 3, 2> invKMatrix;
   double setLeftVelocity = 0;
   double setRightVelocity = 0;
@@ -722,6 +723,7 @@ HatTrickController::HatTrickController(std::string motionPlan) {
           -(motionPlan[0] - '0')*CELL_WIDTH, 
           char_to_heading(motionPlan[2]);
   target = pose;
+  targetCentre = pose;
 
   invKMatrix << WHEEL_RADIUS/2,            WHEEL_RADIUS/2,
                 0,                         0,
@@ -729,7 +731,7 @@ HatTrickController::HatTrickController(std::string motionPlan) {
                 
   // EKF
   // Uncertainty in observations
-  ekfR << pow(0.01,2), 0, 
+  ekfR << pow(0.005,2), 0, 
           0, pow(0.01,2);
   // Uncertainty in model prediction
   ekfQ = MatrixXd::Zero(3,3);
@@ -780,9 +782,8 @@ void HatTrickController::doUpdate() {
   
   this->updateWheelVelocities();
   if (idleCount >= 1) {
-    motionPlanStep++;
     // Print current state
-    std::cout << MESSAGE_PREFIX << "Step: " << std::setw(3) << std::setfill('0') << motionPlanStep - 3
+    std::cout << MESSAGE_PREFIX << "Step: " << std::setw(3) << std::setfill('0') << motionPlanStep - 2
               << ", Row: " << (int)round(-pose(1)/CELL_WIDTH) << ", Column: " << (int)round(pose(0)/CELL_WIDTH)
               << ", Heading: " << heading_to_string(pose(2))
               << ", Left Wall: " << ((dsLeft->getValue() < WALL_THRESHOLD) ? "Y":"N")
@@ -799,27 +800,35 @@ void HatTrickController::doUpdate() {
               << "," << ((dsRight->getValue() < WALL_THRESHOLD) ? "Y":"N")
               << "\n";
     */
-    if (motionPlanStep < motionPlan.length()) {
+    do {
+      motionPlanStep++;
+      if (motionPlanStep < motionPlan.length()) {
       // Advance to next step if one exists, else complete
-      action = actionList.find(motionPlan[motionPlanStep]);
-      switch(action) {
-        case(0):
-          move_forward(target);
+        action = actionList.find(motionPlan[motionPlanStep]);
+        switch(action) {
+          case(0):
+            target = targetCentre;
+            move_forward(targetCentre);
+            target = (target+targetCentre)/2;
+            target(2) = targetCentre(2);
+            break;
+          case(1):
+            targetCentre(2) += M_PI/2;
+            continue;
+          case(2):
+            targetCentre(2) -= M_PI/2;
+            continue;
+        }
+      } else {
+          complete = true;
+          std::cout << MESSAGE_PREFIX << "Motion plan executed!\n";
           break;
-        case(1):
-          target(2) += M_PI/2;
-          break;
-        case(2):
-          target(2) -= M_PI/2;
-          break;
-      } 
-      positioned = false;
-      rotated = false;
-    } else {
-      complete = true;
-      std::cout << MESSAGE_PREFIX << "Motion plan executed!\n";
-    }
+      }
+    } while (action != 0);
+    positioned = false;
+    rotated = false;      
     idleCount = 0;
+    this->updateWheelVelocities();
   }
   // Do not allow an overall w > 2pi/3 as it slips too much
   double magW = abs(-setLeftVelocity + setRightVelocity)/2;
@@ -915,14 +924,14 @@ void HatTrickController::updateStepCamera() {
       // Find columns and adjust x
       double eCamX = round((pose(0) - CELL_WIDTH/2 + seamOffset*cos(pose(2)))/CELL_WIDTH)*CELL_WIDTH;
       eCamX += CELL_WIDTH/2;
-      pose(0) += (eCamX - seamOffset*cos(pose(2)) - pose(0))*0.2;
+      pose(0) += (eCamX - seamOffset*cos(pose(2)) - pose(0))*0.05;
     } else {
       // Find rows and adjust y
       double eCamY = round((pose(1) + CELL_WIDTH/2 + seamOffset*sin(pose(2)))/CELL_WIDTH)*CELL_WIDTH;
       eCamY -= CELL_WIDTH/2;
-      pose(1) += (eCamY - seamOffset*sin(pose(2)) - pose(1))*0.2;
+      pose(1) += (eCamY - seamOffset*sin(pose(2)) - pose(1))*0.05;
     }
-    pose(2) += atan2(rightRowPos-leftRowPos, rightColPos-leftColPos)*0.2; 
+    pose(2) += atan2(rightRowPos-leftRowPos, rightColPos-leftColPos)*0.05; 
   }
 }
 
@@ -1007,14 +1016,15 @@ void HatTrickController::updateWheelVelocities() {
     if (offsetAngle > M_PI/2) offsetAngle -= M_PI;
     // Angle required to rotate robot to correct rotation
     double errorAngle = 0;
+    if ((target(2)-pose(2))*offsetAngle < 0 && abs(offsetAngle) > M_PI/3) offsetAngle*=-1;
     if (positioned) errorAngle = target(2) - pose(2);
     else errorAngle = offsetAngle;
     if (abs(errorAngle) < acceptableRotationError2) rotated = true;
     Matrix<double, 3, 1> columnVector(rotated ? errorDistance:0, 0, errorAngle*kpw);
     Matrix<double, 2, 1> invKSolution = invKMatrix.colPivHouseholderQr().solve(columnVector);
     // Scale desired speed to remain within limits
-    if (invKSolution.maxCoeff() > MAX_SPEED) invKSolution *= MAX_SPEED/(kp*invKSolution.maxCoeff());
-    if (invKSolution.minCoeff() < -MAX_SPEED) invKSolution *= -MAX_SPEED/(kp*invKSolution.minCoeff());
+    if (invKSolution.maxCoeff() > 0) invKSolution *= MAX_SPEED/(kp*invKSolution.maxCoeff());
+    if (invKSolution.minCoeff() < 0) invKSolution *= -MAX_SPEED/(kp*invKSolution.minCoeff());
     setLeftVelocity = kp*invKSolution(0);
     setRightVelocity = kp*invKSolution(1);
   }
