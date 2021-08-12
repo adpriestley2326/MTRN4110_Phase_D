@@ -741,12 +741,6 @@ HatTrickController::HatTrickController(std::string motionPlan) {
 
 HatTrickController::~HatTrickController() {
   delete robot;
-  delete groundCam;
-  delete leftMotor;
-  delete rightMotor;
-  delete dsLeft;
-  delete dsRight;
-  delete dsFront;
 }
 
 void HatTrickController::initialiseSensors() {
