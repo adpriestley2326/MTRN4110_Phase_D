@@ -18,7 +18,9 @@
 #include <sstream>
 #include <string>
 #include <iomanip>
-#include <vector>
+//#include <vector>
+
+#include <FloodFillMap.hpp>
 
 
 // Motion stuff
@@ -125,7 +127,7 @@ const std::string MESSAGE_PREFIX = "[MTRN4110_PhaseD] ";
 
 // Path planning stuff
 using namespace std;
-#define N 200
+/*#define N 200
 
 struct Cell {
   int row;
@@ -139,14 +141,14 @@ enum Direction {
   west,
 };
 
-typedef vector<Direction> Path;
+typedef vector<Direction> Path;*/
 
 const string MAP_FILE_NAME = "../../MapBuilt.txt";
 const string PATH_PLAN_FILE_NAME = "../../PathPlan.txt";
 const string OUTPUT_FILE_NAME = "../../Output.txt";
 fstream output_fs;
 fstream path_fs;
-vector<Direction> all_directions = {north,east,south,west};
+//vector<Direction> all_directions = {north,east,south,west};
 
 const double dsRotation[8] 
       = {-1.0/12*M_PI, 1.0/12*M_PI, 5.0/12*M_PI, 7.0/12*M_PI,
@@ -159,7 +161,7 @@ double getAverage(double *a, int length);
 double clamp(double v, double hi, double lo);
 bool detectBlackLine(const unsigned char *image, int width, int height);
 
-class FloodFillMap {
+/*class FloodFillMap {
   public:
     Cell target_cell;
     Cell start_cell;
@@ -180,11 +182,11 @@ class FloodFillMap {
     vector<Path> findShortestPaths(Cell c);
     void highlightPath(Path p);
     void display();
-};
+};*/
 
 void myPrint(string s);
 vector<char> store_row_string(string s);
-string dir2String (Direction d);
+//string dir2String (Direction d);
 string cell2String (Cell c);
 int numTurnsInPath(Path p, Direction initial);
 string generateMotionPlan(Path p, Cell initial_cell, Direction initial_dir);
@@ -330,7 +332,7 @@ vector<char> store_row_string (string s) {
   return row;
 }
 
-string dir2String (Direction d) {
+/*string dir2String (Direction d) {
   switch (d) {
     case north: return "^";
     case east: return ">";
@@ -338,7 +340,7 @@ string dir2String (Direction d) {
     case west: return "<";
   }
   return "o";
-}
+}*/
 
 string cell2String (Cell c) {
   return "(" + to_string(c.row) + ", " + to_string(c.col) + ")";
@@ -417,7 +419,7 @@ string generateMotionPlan(Path p, Cell initial_cell, Direction initial_dir) {
 
 // --- FloodFillMap member functions -----
 
-FloodFillMap::FloodFillMap (vector<vector<char>> char_map) {
+/*FloodFillMap::FloodFillMap (vector<vector<char>> char_map) {
   // myPrint("Creating floodfill map...");
   n_rows = (int) char_map.size() / 2;
   n_cols = (int) char_map[0].size() / 2;
@@ -617,9 +619,7 @@ void FloodFillMap::display() {
           if (curr.row == start_cell.row && curr.col == start_cell.col) {
             // Display starting position
             row_string.append(" " + dir2String(start_dir) + " ");
-          /*} else if (curr.row == target_cell.row && curr.col == target_cell.col) {
-            // Display target position
-            row_string.append(" x ");*/
+
           } else if (getCellValue(curr.row, curr.col) == N) {
             // Display empty cell
             row_string.append("   ");
@@ -640,7 +640,7 @@ void FloodFillMap::display() {
     h_wall = !h_wall;
     myPrint(row_string);
   }
-}
+}*/
 
 // -------------------- PHASE A HELPER FUNCTIONS ---------------------
 std::string HatTrickController::heading_to_string(double heading) {

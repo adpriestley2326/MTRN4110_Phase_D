@@ -1,4 +1,10 @@
 // Floodfill-map.hpp
+#include <stack>
+#include <vector>
+
+#define MAX_VAL 200
+
+using namespace std;
 
 struct Cell {
   int row;
@@ -16,6 +22,16 @@ typedef vector<Direction> Path;
 
 vector<Direction> all_directions = {north,east,south,west};
 
+string dir2String (Direction d) {
+  switch (d) {
+    case north: return "^";
+    case east: return ">";
+    case south: return "v";
+    case west: return "<";
+  }
+  return "o";
+}
+
 class FloodFillMap {
   public:
     Cell target_cell;
@@ -28,12 +44,16 @@ class FloodFillMap {
     int n_cols;
     
     FloodFillMap(vector<vector<char>> char_map);
+    FloodFillMap(int num_rows, int num_cols, Cell start, Cell target);
     bool validRowCol(int row, int col);
     int getCellValue(int row, int col);
-    Cell getNeighbourCell (int row, int col, Direction dir);
+    Cell getNeighbourCell(int row, int col, Direction dir);
+    vector<Cell> getNeighbourCells(Cell c);
     int setCellValue(int row, int col, int value);
     bool wallIsPresent(int row, int col, Direction dir);
+    void addWall(Cell c, Direction dir);
     void doFloodFill(); 
+    void updateFloodFill(Cell c);
     vector<Path> findShortestPaths(Cell c);
     void highlightPath(Path p);
     void display();
@@ -49,17 +69,14 @@ FloodFillMap::FloodFillMap (vector<vector<char>> char_map) {
     for (int c = 0; c < (int)char_map[r].size(); c++) {
       if (r % 2 == 0) { 
         if (c % 2 != 0) { // Horizontal wall or lack thereof
-          //myPrint("Checking horizontal wall at (" + to_string(r) + ", " + to_string(c) + ")");
           walls_row_vec.push_back(char_map[r][c] == '-');
-          //myPrint("    Wall stored.");
         }
       } else if (c % 2 == 0) { 
         if (r % 2 != 0) { // Vertical wall or lack thereof
-          //myPrint("Checking vertical wall at (" + to_string(r) + ", " + to_string(c) + ")");
           walls_row_vec.push_back(char_map[r][c] == '|');
         }
       } else { // Cell - not wall
-        int cell_val = N;
+        int cell_val = MAX_VAL;
         if (char_map[r][c] == 'x') { // target cell found
           target_cell = {(r+1)/2, (c+1)/2}; // record its position
           cell_val = 0;
@@ -91,6 +108,29 @@ FloodFillMap::FloodFillMap (vector<vector<char>> char_map) {
     }
     // myPrint("    Row " + to_string(r) + " complete!");
   }      
+}
+
+FloodFillMap::FloodFillMap (int num_rows, int num_cols, Cell start, Cell target) {
+  n_rows = num_rows;
+  n_cols = num_cols;
+  start_cell = start;
+  target_cell = target;
+  
+  // Initialise empty maze
+  vector<bool> h_walls_outer_row(n_cols, true);
+  vector<bool> h_walls_row(n_cols, false);
+  vector<bool> v_walls_row(n_cols+1, false);
+  v_walls_row[0] = true;
+  *(v_walls_row.rbegin()) = true;
+  for (int r = 0; r < num_rows; r++) {
+    v_walls.push_back(v_walls_row);
+  }
+  h_walls.push_back(h_walls_outer_row);
+  for (int r = 1; r < num_rows; r++) {
+    h_walls.push_back(h_walls_row);
+  }
+  h_walls.push_back(h_walls_outer_row);
+  
 }
 
 bool FloodFillMap::validRowCol (int row, int col) {
@@ -127,7 +167,7 @@ int FloodFillMap::setCellValue (int row, int col, int value) {
 
 bool FloodFillMap::wallIsPresent (int row, int col, Direction dir) {
   if (!validRowCol(row,col)) {
-    myPrint("Invalid row or col for wallIsPresent!");
+    cout << "Invalid row or col for wallIsPresent!";
     return false;
   }
   switch (dir) {
@@ -136,10 +176,22 @@ bool FloodFillMap::wallIsPresent (int row, int col, Direction dir) {
     case east:  return v_walls[row-1][col];
     case west:  return v_walls[row-1][col-1];
     default:
-      myPrint("Invalid direction passed to wallIsPresent!");
+      cout << "Invalid direction passed to wallIsPresent!";
       return false;
   }
 }
+
+vector<Cell> FloodFillMap::getNeighbourCells(Cell c) {
+  vector<Cell> neighbours;
+  for (auto direction_it = all_directions.begin();
+            direction_it != all_directions.end();
+            direction_it++) {
+    if (!wallIsPresent(c.row,c.col,*direction_it)) {
+      neighbours.push_back(getNeighbourCell(c.row,c.col,*direction_it));
+    }
+  }
+  return neighbours;
+}  
 
 void FloodFillMap::doFloodFill() {
   int curr_explored_val = 0;
@@ -150,28 +202,44 @@ void FloodFillMap::doFloodFill() {
       for (int c = 1; c <= n_cols; c++) {
         int curr_cell_val = getCellValue(r,c);
         if (curr_cell_val == curr_explored_val) {
-          //cout << "\n\nr" << to_string(r) << " c" << to_string(c) << ":\n";
-          for (auto direction_it = all_directions.begin();
-                      direction_it != all_directions.end();
-                      direction_it++)
-            {
-            //cout << "  " << dir2String(*direction_it) << ": ";
-            if (!wallIsPresent(r,c,*direction_it)) {
-              //cout << "open - ";
-              Cell neighbour = getNeighbourCell(r,c,*direction_it);
-              if (getCellValue(neighbour.row, neighbour.col) == N) {
-                //cout << "Changing value of cell: " << cell2String(neighbour)
-                //     << " to " << curr_cell_val+1 << '\n';
-                setCellValue(neighbour.row, neighbour.col, curr_cell_val + 1);
-                maze_val_changed = true;
-              }// else cout << "Already explored\n";
-            }// else cout << "walled\n";
+          Cell curr = {r, c};
+          auto neighbours = getNeighbourCells(curr);
+          for (auto neighbour_it = neighbours.begin(); neighbour_it != neighbours.end(); neighbour_it++){
+            Cell neighbour = *neighbour_it;
+            if (getCellValue(neighbour.row, neighbour.col) == MAX_VAL) {
+              setCellValue(neighbour.row, neighbour.col, curr_cell_val + 1);
+              maze_val_changed = true;
+            }
           }
         }
       }
     }
     curr_explored_val++;
-    //cout << "\n \n---- Now looking at cells w. value " << curr_explored_val << "-------";
+  }
+  return;
+}
+
+void FloodFillMap::updateFloodFill(Cell initial) {
+  stack<Cell> c_stack;
+  c_stack.push(initial);
+  while (!c_stack.empty()) {
+    Cell curr = c_stack.top();
+    c_stack.pop();
+    int min_neighbour_dist = MAX_VAL;
+    auto neighbours = getNeighbourCells(curr);
+    for (auto neighbour_it = neighbours.begin(); neighbour_it != neighbours.end(); neighbour_it++){
+      Cell neighbour = *neighbour_it;
+      int neighbour_dist = getCellValue(neighbour.row, neighbour.col);
+      if (neighbour_dist < min_neighbour_dist) {
+        min_neighbour_dist = neighbour_dist;
+      }
+    }
+    if (min_neighbour_dist != getCellValue(curr.row, curr.col) - 1) {
+      setCellValue(curr.row, curr.col, min_neighbour_dist + 1);
+      for (auto neighbour_it = neighbours.begin(); neighbour_it != neighbours.end(); neighbour_it++) {
+        c_stack.push(*neighbour_it);
+      }
+    }      
   }
   return;
 }
@@ -203,7 +271,7 @@ void FloodFillMap::highlightPath(Path p) {
   Cell curr = start_cell;
   for (int r = 1; r <= n_rows; r++) {
     for (int c = 1; c <= n_cols; c++) {
-      setCellValue(r, c, N); // Empty all cell values
+      setCellValue(r, c, MAX_VAL); // Empty all cell values
     }
   }
   for (auto dir_it = p.rbegin(); dir_it != p.rend(); dir_it++) {
@@ -239,10 +307,7 @@ void FloodFillMap::display() {
           if (curr.row == start_cell.row && curr.col == start_cell.col) {
             // Display starting position
             row_string.append(" " + dir2String(start_dir) + " ");
-          /*} else if (curr.row == target_cell.row && curr.col == target_cell.col) {
-            // Display target position
-            row_string.append(" x ");*/
-          } else if (getCellValue(curr.row, curr.col) == N) {
+          } else if (getCellValue(curr.row, curr.col) == MAX_VAL) {
             // Display empty cell
             row_string.append("   ");
           } else {
@@ -260,6 +325,39 @@ void FloodFillMap::display() {
       v_walls_row++;
     }
     h_wall = !h_wall;
-    myPrint(row_string);
+    cout << row_string << '\n';
   }
 }
+
+void FloodFillMap::addWall(Cell c, Direction dir) {
+  // Check validity
+  if (!validRowCol(c.row,c.col)) {
+    cout << "Invalid row or col for addWall!\n";
+    return;
+  }
+  
+  // Check if change is required
+  if (wallIsPresent(c.row, c.col, dir)) {
+    return;
+  }
+  
+  // Update wall in map
+  switch (dir) {
+    case north:
+      h_walls[c.row-1][c.col-1] = true; break;
+    case south:
+      h_walls[c.row][c.col-1] = true; break;
+    case east: 
+      v_walls[c.row-1][c.col] = true; break;
+    case west:
+      v_walls[c.row-1][c.col-1] = true; break;
+    default:
+      cout << "Invalid direction passed to addWall!\n";
+  }
+  
+  // Update distance to target - modified floodfill
+  updateFloodFill(c);
+  
+  return;
+}
+
