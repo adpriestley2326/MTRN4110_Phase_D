@@ -22,7 +22,6 @@
 
 #include <FloodFillMap.hpp>
 
-
 // Motion stuff
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -127,28 +126,12 @@ const std::string MESSAGE_PREFIX = "[MTRN4110_PhaseD] ";
 
 // Path planning stuff
 using namespace std;
-/*#define N 200
-
-struct Cell {
-  int row;
-  int col;
-};
-
-enum Direction {
-  north,
-  east,
-  south,
-  west,
-};
-
-typedef vector<Direction> Path;*/
 
 const string MAP_FILE_NAME = "../../MapBuilt.txt";
 const string PATH_PLAN_FILE_NAME = "../../PathPlan.txt";
 const string OUTPUT_FILE_NAME = "../../Output.txt";
 fstream output_fs;
 fstream path_fs;
-//vector<Direction> all_directions = {north,east,south,west};
 
 const double dsRotation[8] 
       = {-1.0/12*M_PI, 1.0/12*M_PI, 5.0/12*M_PI, 7.0/12*M_PI,
@@ -161,32 +144,8 @@ double getAverage(double *a, int length);
 double clamp(double v, double hi, double lo);
 bool detectBlackLine(const unsigned char *image, int width, int height);
 
-/*class FloodFillMap {
-  public:
-    Cell target_cell;
-    Cell start_cell;
-    Direction start_dir;
-    vector<vector<int>> cell_vals;
-    vector<vector<bool>> h_walls;
-    vector<vector<bool>> v_walls;
-    int n_rows;
-    int n_cols;
-    
-    FloodFillMap(vector<vector<char>> char_map);
-    bool validRowCol(int row, int col);
-    int getCellValue(int row, int col);
-    Cell getNeighbourCell (int row, int col, Direction dir);
-    int setCellValue(int row, int col, int value);
-    bool wallIsPresent(int row, int col, Direction dir);
-    void doFloodFill(); 
-    vector<Path> findShortestPaths(Cell c);
-    void highlightPath(Path p);
-    void display();
-};*/
-
 void myPrint(string s);
 vector<char> store_row_string(string s);
-//string dir2String (Direction d);
 string cell2String (Cell c);
 int numTurnsInPath(Path p, Direction initial);
 string generateMotionPlan(Path p, Cell initial_cell, Direction initial_dir);
@@ -202,12 +161,12 @@ using namespace webots;
 // The arguments of the main function can be specified by the
 // "controllerArgs" field of the Robot node
 int main(int argc, char **argv) {
-  // ------------------ FROM PHASE B - PATH PLANNING STUFF ----------------------
+  // ------------------ PATH PLANNING STUFF ----------------------
   // Open files for writing
   output_fs.open(OUTPUT_FILE_NAME, ios::out);
   path_fs.open(PATH_PLAN_FILE_NAME, ios::out);
 
-  // Task 1a - Open map file
+  // Open map file
   myPrint("Reading in map from " + MAP_FILE_NAME + "...");
   fstream map_fs(MAP_FILE_NAME, ios::in);
   if (!map_fs.is_open()) {
@@ -215,7 +174,7 @@ int main(int argc, char **argv) {
     return 1;
   }
   
-  // Task 1b - Read map file
+  // Read map file
   string map_line;
   vector<vector<char>> char_map;
   while (getline(map_fs, map_line)) {
@@ -227,8 +186,12 @@ int main(int argc, char **argv) {
   myPrint("Map read in!");
   
   
-  // Task 2a - Do floodfill
-  FloodFillMap map(char_map);
+  // Do floodfill on a map without wall
+  Cell start = {1,1}; // My cell convention starts at 1, not 0
+  Cell target = {3,5};
+  Direction dir = south;
+  //FloodFillMap map(char_map);
+  FloodFillMap map(5, 9, start, target, dir);
   map.doFloodFill();
   
   // Task 2b - Find & display shortest paths
