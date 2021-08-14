@@ -192,9 +192,18 @@ int main(int argc, char **argv) {
   Direction dir = south;
   FloodFillMap map(5, 9, start, target, dir);
   myPrint("Map created successfully!");
-  myPrint("Running floodfill");
+  myPrint("Running floodfill...");
   map.doFloodFill();
   myPrint("Floodfill successful!");
+  map.display();
+  
+  // Add wall and test path updating
+  myPrint("Simulating detected wall at cell (3,4) in east direction...");
+  Cell target_left = {target.row, target.col-1};
+  map.addWall(target_left, east);
+  map.updateFloodFill(target_left);
+  myPrint("Updated map:");
+  map.display();
   
   // Task 2b - Find & display shortest paths
   myPrint("Finding shortest paths...");

@@ -322,7 +322,7 @@ void FloodFillMap::addWall(Cell c, Direction dir) {
   }
   
   // Update distance to target - modified floodfill
-  updateFloodFill(c);
+  //updateFloodFill(c);
   
   return;
 }
