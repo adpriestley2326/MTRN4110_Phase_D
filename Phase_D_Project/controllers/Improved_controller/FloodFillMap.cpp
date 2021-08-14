@@ -4,6 +4,10 @@
 #include <string>
 #include <FloodFillMap.hpp>
 
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+
 string dir2String (Direction d) {
   switch (d) {
     case north: return "^";
@@ -13,6 +17,8 @@ string dir2String (Direction d) {
   }
   return "o";
 }
+
+const string OUTPUT_FILE_NAME = "../../Output.txt";
 
 vector<Direction> all_directions = {north,east,south,west};
 
@@ -74,25 +80,21 @@ FloodFillMap::FloodFillMap (int num_rows, int num_cols, Cell start, Cell target,
   target_cell = target;
   start_dir = dir;
   
-  // Initialise empty maze
-  cout << "Initialising empty maze...\n";
-  /*vector<bool> h_walls_outer_row(n_cols, true);
-  vector<bool> h_walls_row(n_cols, false);
-  vector<bool> v_walls_row(n_cols+1, false);
-  v_walls_row.at(0) = true;
-  v_walls_row.at(v_walls_row.size()-1) = true;
-  for (int r = 0; r < num_rows; r++) {
-    v_walls.push_back(v_walls_row);
-  }
-  h_walls.push_back(h_walls_outer_row);
-  for (int r = 1; r < num_rows; r++) {
-    h_walls.push_back(h_walls_row);
-  }
-  h_walls.push_back(h_walls_outer_row);*/
-  //h_walls = vector<vector<bool>>(n_rows+1, vector<bool>(n_cols, false));
-  //vector<vector<bool>> v_walls(n_rows, vector<bool>(n_cols+1, false));
-  //vector<vector<int>> cell_vals(n_rows, vector<int>(n_cols, MAX_VAL));
+  // Initialise empty maze 
+  // Set up horizontal walls
+  h_walls = vector<vector<bool>>(n_rows+1, vector<bool>(n_cols, false));
+  h_walls[0] = vector<bool>(n_cols, true);
+  h_walls[n_rows] = vector<bool>(n_cols, true);
   
+  // Set up vertical walls
+  vector<bool> v_walls_row(n_cols+1, false);
+  v_walls_row[0] = true;
+  v_walls_row[n_cols] = true;
+  v_walls = vector<vector<bool>>(n_rows, v_walls_row);
+  
+  // Set up cell values (distances from target)
+  cell_vals = vector<vector<int>>(n_rows, vector<int>(n_cols, MAX_VAL));
+  cell_vals[target_cell.row-1][target_cell.col-1] = 0;  
 }
 
 bool FloodFillMap::validRowCol (int row, int col) {
@@ -158,8 +160,10 @@ vector<Cell> FloodFillMap::getNeighbourCells(Cell c) {
 void FloodFillMap::doFloodFill() {
   int curr_explored_val = 0;
   bool maze_val_changed = true;
+  //int iteration = 1;
   while (maze_val_changed) {
     maze_val_changed = false;
+    //cout << "\tRunning iteration " << to_string(iteration++) << '\n';
     for (int r = 1; r <= n_rows; r++) {
       for (int c = 1; c <= n_cols; c++) {
         int curr_cell_val = getCellValue(r,c);

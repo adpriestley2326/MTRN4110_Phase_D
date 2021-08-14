@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
   string map_line;
   vector<vector<char>> char_map;
   while (getline(map_fs, map_line)) {
-    myPrint(map_line);
+    //myPrint(map_line);
     vector<char> row = store_row_string(map_line);
     char_map.push_back(row);
   }
@@ -186,13 +186,15 @@ int main(int argc, char **argv) {
   myPrint("Map read in!");
   
   
-  // Do floodfill on a map without wall
+  // Do floodfill on a map without walls
   Cell start = {1,1}; // My cell convention starts at 1, not 0
   Cell target = {3,5};
   Direction dir = south;
-  //FloodFillMap map(char_map);
   FloodFillMap map(5, 9, start, target, dir);
+  myPrint("Map created successfully!");
+  myPrint("Running floodfill");
   map.doFloodFill();
+  myPrint("Floodfill successful!");
   
   // Task 2b - Find & display shortest paths
   myPrint("Finding shortest paths...");
