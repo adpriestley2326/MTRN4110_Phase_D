@@ -1,5 +1,7 @@
-build/release/Combined_controller.o: Combined_controller.cpp \
+build/release/HatTrickController.o: HatTrickController.cpp \
+ HatTrickController.hpp \
  /usr/local/webots/include/controller/cpp/webots/Robot.hpp \
+ /usr/local/webots/include/controller/cpp/webots/Keyboard.hpp \
  /usr/local/webots/include/controller/cpp/webots/Motor.hpp \
  /usr/local/webots/include/controller/cpp/webots/Device.hpp \
  /usr/local/webots/include/controller/cpp/webots/../../c/webots/types.h \

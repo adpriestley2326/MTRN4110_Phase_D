@@ -40,7 +40,7 @@
 ### ---- C++ Sources ----
 ### if your program uses several C++ source files:
 ### CXX_SOURCES = my_plugin.cc my_clever_algo.cpp my_graphics.c++
-CXX_SOURCES = Improved_controller.cpp FloodFillMap.cpp
+CXX_SOURCES = Improved_controller.cpp FloodFillMap.cpp HatTrickController.cpp
 ###
 ### ---- Compilation options ----
 ### if special compilation flags are necessary:
