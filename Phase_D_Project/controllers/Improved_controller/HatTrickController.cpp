@@ -76,39 +76,41 @@ void HatTrickController::doUpdate() {
   this->predictionStep();
   this->updateStepCamera();
   this->updateStepDistanceSensors();
-  int c = -1;
-  do {
-      c = this->keyboard->getKey();
-      if (c == -1)
-        break;
-      autopilot = false;
-      switch (c) {
-        case ('A'):
-          idleCount++;
-          autopilot = true;
-          break;
-        case (keyboard->UP):
-          speed = MAX_SPEED/10;
-          yaw_speed = 0;
-          break;
-        case (keyboard->DOWN):
-          speed = -MAX_SPEED/10;
-          yaw_speed = 0;
-          break;
-        case (keyboard->RIGHT):
-          yaw_speed = -MAX_OMEGA;
-          speed = 0;
-          break;
-        case (keyboard->LEFT):
-          yaw_speed = MAX_OMEGA;
-          speed = 0;
-          break;
-        case ' ':
-          speed = 0;
-          yaw_speed = 0;
-          break;
-      }
+  if (!speedrun) {
+    int c = -1;
+    do {
+        c = this->keyboard->getKey();
+        if (c == -1)
+            break;
+        autopilot = false;
+        switch (c) {
+            case ('A'):
+            idleCount++;
+            autopilot = true;
+            break;
+            case (keyboard->UP):
+            speed = MAX_SPEED/10;
+            yaw_speed = 0;
+            break;
+            case (keyboard->DOWN):
+            speed = -MAX_SPEED/10;
+            yaw_speed = 0;
+            break;
+            case (keyboard->RIGHT):
+            yaw_speed = -MAX_OMEGA;
+            speed = 0;
+            break;
+            case (keyboard->LEFT):
+            yaw_speed = MAX_OMEGA;
+            speed = 0;
+            break;
+            case ' ':
+            speed = 0;
+            yaw_speed = 0;
+            break;
+        }
     } while (c);
+  }
   if (autopilot) this->updateWheelVelocities();
   else this->manualDrive(); 
   if (idleCount >= 1 && !mapped) {
