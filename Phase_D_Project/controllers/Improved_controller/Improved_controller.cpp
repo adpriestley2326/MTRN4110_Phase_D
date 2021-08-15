@@ -1,4 +1,4 @@
-// File:          Combined_controller.cpp
+// File:          Improved_controller.cpp
 // Date:
 // Description:
 // Author:
@@ -21,7 +21,6 @@
 //#include <vector>
 
 #include <FloodFillMap.hpp>
-
 
 // Motion stuff
 #define _USE_MATH_DEFINES
@@ -60,7 +59,7 @@ class HatTrickController {
   const std::string MOTION_PLAN_FILE_NAME = "../../PathPlan.txt";
   const std::string MOTION_EXECUTION_FILE_NAME = "../../MotionExecution.csv";
   const std::string MESSAGE_PREFIX = "[MTRN4110_PhaseD] ";
-  const int TIME_STEP = 32;
+  const int TIME_STEP = 64;
   const double CELL_WIDTH = 0.165;
   const double WHEEL_RADIUS = 0.02;
   const double AXLE_LENGTH = 0.056*1.003;
@@ -75,14 +74,14 @@ class HatTrickController {
   const unsigned char *groundCamImage;
 
   // Constants to tune
-  const double MAX_OMEGA = 6.28/2;
+  const double MAX_OMEGA = MAX_SPEED/3.0;
   const int WALL_THRESHOLD = 1200;
   
-  const double kp = 15;
-  const double kpw = 5; // multiplier on bearing error
+  const double kp = 5;
+  const double kpw = 3; // multiplier on bearing error
   const double acceptablePositionError = 0.01;
-  const double acceptableRotationError = 15*M_PI/180.0;
-  const double acceptableRotationError2 = 35*M_PI/180.0; // used for enabling forward movement to next target
+  const double acceptableRotationError = 0.5*M_PI/180.0;
+  const double acceptableRotationError2 = 0.5*M_PI/180.0; // used for enabling forward movement to next target
   
   // EKF Stuff
   Matrix<double, 2, 2> ekfR;
@@ -100,7 +99,6 @@ class HatTrickController {
   std::string motionPlan;
   Matrix<double, 3, 1> pose;
   Matrix<double, 3, 1> target;
-  Matrix<double, 3, 1> targetCentre;
   Matrix<double, 3, 2> invKMatrix;
   double setLeftVelocity = 0;
   double setRightVelocity = 0;
@@ -128,28 +126,12 @@ const std::string MESSAGE_PREFIX = "[MTRN4110_PhaseD] ";
 
 // Path planning stuff
 using namespace std;
-/*#define N 200
-
-struct Cell {
-  int row;
-  int col;
-};
-
-enum Direction {
-  north,
-  east,
-  south,
-  west,
-};
-
-typedef vector<Direction> Path;*/
 
 const string MAP_FILE_NAME = "../../MapBuilt.txt";
 const string PATH_PLAN_FILE_NAME = "../../PathPlan.txt";
 const string OUTPUT_FILE_NAME = "../../Output.txt";
 fstream output_fs;
 fstream path_fs;
-//vector<Direction> all_directions = {north,east,south,west};
 
 const double dsRotation[8] 
       = {-1.0/12*M_PI, 1.0/12*M_PI, 5.0/12*M_PI, 7.0/12*M_PI,
@@ -162,32 +144,8 @@ double getAverage(double *a, int length);
 double clamp(double v, double hi, double lo);
 bool detectBlackLine(const unsigned char *image, int width, int height);
 
-/*class FloodFillMap {
-  public:
-    Cell target_cell;
-    Cell start_cell;
-    Direction start_dir;
-    vector<vector<int>> cell_vals;
-    vector<vector<bool>> h_walls;
-    vector<vector<bool>> v_walls;
-    int n_rows;
-    int n_cols;
-    
-    FloodFillMap(vector<vector<char>> char_map);
-    bool validRowCol(int row, int col);
-    int getCellValue(int row, int col);
-    Cell getNeighbourCell (int row, int col, Direction dir);
-    int setCellValue(int row, int col, int value);
-    bool wallIsPresent(int row, int col, Direction dir);
-    void doFloodFill(); 
-    vector<Path> findShortestPaths(Cell c);
-    void highlightPath(Path p);
-    void display();
-};*/
-
 void myPrint(string s);
 vector<char> store_row_string(string s);
-//string dir2String (Direction d);
 string cell2String (Cell c);
 int numTurnsInPath(Path p, Direction initial);
 string generateMotionPlan(Path p, Cell initial_cell, Direction initial_dir);
@@ -203,12 +161,12 @@ using namespace webots;
 // The arguments of the main function can be specified by the
 // "controllerArgs" field of the Robot node
 int main(int argc, char **argv) {
-  // ------------------ FROM PHASE B - PATH PLANNING STUFF ----------------------
+  // ------------------ PATH PLANNING STUFF ----------------------
   // Open files for writing
   output_fs.open(OUTPUT_FILE_NAME, ios::out);
   path_fs.open(PATH_PLAN_FILE_NAME, ios::out);
 
-  // Task 1a - Open map file
+  // Open map file
   myPrint("Reading in map from " + MAP_FILE_NAME + "...");
   fstream map_fs(MAP_FILE_NAME, ios::in);
   if (!map_fs.is_open()) {
@@ -216,11 +174,11 @@ int main(int argc, char **argv) {
     return 1;
   }
   
-  // Task 1b - Read map file
+  // Read map file
   string map_line;
   vector<vector<char>> char_map;
   while (getline(map_fs, map_line)) {
-    myPrint(map_line);
+    //myPrint(map_line);
     vector<char> row = store_row_string(map_line);
     char_map.push_back(row);
   }
@@ -228,9 +186,24 @@ int main(int argc, char **argv) {
   myPrint("Map read in!");
   
   
-  // Task 2a - Do floodfill
-  FloodFillMap map(char_map);
+  // Do floodfill on a map without walls
+  Cell start = {1,1}; // My cell convention starts at 1, not 0
+  Cell target = {3,5};
+  Direction dir = south;
+  FloodFillMap map(5, 9, start, target, dir);
+  myPrint("Map created successfully!");
+  myPrint("Running floodfill...");
   map.doFloodFill();
+  myPrint("Floodfill successful!");
+  map.display();
+  
+  // Add wall and test path updating
+  myPrint("Simulating detected wall at cell (3,4) in east direction...");
+  Cell target_left = {target.row, target.col-1};
+  map.addWall(target_left, east);
+  map.updateFloodFill(target_left);
+  myPrint("Updated map:");
+  map.display();
   
   // Task 2b - Find & display shortest paths
   myPrint("Finding shortest paths...");
@@ -333,16 +306,6 @@ vector<char> store_row_string (string s) {
   return row;
 }
 
-/*string dir2String (Direction d) {
-  switch (d) {
-    case north: return "^";
-    case east: return ">";
-    case south: return "v";
-    case west: return "<";
-  }
-  return "o";
-}*/
-
 string cell2String (Cell c) {
   return "(" + to_string(c.row) + ", " + to_string(c.col) + ")";
 }
@@ -416,232 +379,6 @@ string generateMotionPlan(Path p, Cell initial_cell, Direction initial_dir) {
   }  
   return plan;
 }
-
-
-// --- FloodFillMap member functions -----
-
-/*FloodFillMap::FloodFillMap (vector<vector<char>> char_map) {
-  // myPrint("Creating floodfill map...");
-  n_rows = (int) char_map.size() / 2;
-  n_cols = (int) char_map[0].size() / 2;
-  for (int r = 0; r < (int)char_map.size(); r++) {
-    vector<bool> walls_row_vec;
-    vector<int> row_vec;
-    for (int c = 0; c < (int)char_map[r].size(); c++) {
-      if (r % 2 == 0) { 
-        if (c % 2 != 0) { // Horizontal wall or lack thereof
-          //myPrint("Checking horizontal wall at (" + to_string(r) + ", " + to_string(c) + ")");
-          walls_row_vec.push_back(char_map[r][c] == '-');
-          //myPrint("    Wall stored.");
-        }
-      } else if (c % 2 == 0) { 
-        if (r % 2 != 0) { // Vertical wall or lack thereof
-          //myPrint("Checking vertical wall at (" + to_string(r) + ", " + to_string(c) + ")");
-          walls_row_vec.push_back(char_map[r][c] == '|');
-        }
-      } else { // Cell - not wall
-        int cell_val = N;
-        if (char_map[r][c] == 'x') { // target cell found
-          target_cell = {(r+1)/2, (c+1)/2}; // record its position
-          cell_val = 0;
-        } else if (char_map[r][c] != ' ') { // directional cell
-          start_cell = {(r+1)/2, (c+1)/2};
-          switch (char_map[r][c]) {
-            case '^':
-              start_dir = north;
-              break;
-            case '>':
-              start_dir = east;
-              break;
-            case '<':
-              start_dir = west;
-              break;
-            case 'v':
-              start_dir = south;
-              break;
-          }
-        }
-        row_vec.push_back(cell_val);
-      }
-    }
-    if (r % 2 == 0) {
-      h_walls.push_back(walls_row_vec);
-    } else {
-      v_walls.push_back(walls_row_vec);
-      cell_vals.push_back(row_vec);
-    }
-    // myPrint("    Row " + to_string(r) + " complete!");
-  }      
-}
-
-bool FloodFillMap::validRowCol (int row, int col) {
-  if (row < 1 || row > n_rows) return false;
-  if (col < 1 || col > n_cols) return false;
-  return true;
-}
-  
-int FloodFillMap::getCellValue (int row, int col) {
-  if (!validRowCol(row,col)) return -1;
-  return cell_vals[row - 1][col - 1];
-}
-
-Cell FloodFillMap::getNeighbourCell (int row, int col, Direction dir) {
-  Cell neighbour;
-  switch (dir) {
-    case north:
-      neighbour = {row - 1, col}; break;
-    case east:
-      neighbour = {row, col + 1}; break;
-    case south:
-      neighbour = {row + 1, col}; break;
-    case west:
-      neighbour = {row, col - 1}; break;
-  }
-  return neighbour;
-}
-
-int FloodFillMap::setCellValue (int row, int col, int value) {
-  if (!validRowCol(row,col)) return -1;
-  cell_vals[row - 1][col - 1] = value;
-  return value;
-}
-
-bool FloodFillMap::wallIsPresent (int row, int col, Direction dir) {
-  if (!validRowCol(row,col)) {
-    myPrint("Invalid row or col for wallIsPresent!");
-    return false;
-  }
-  switch (dir) {
-    case north: return h_walls[row-1][col-1];
-    case south: return h_walls[row][col-1];
-    case east:  return v_walls[row-1][col];
-    case west:  return v_walls[row-1][col-1];
-    default:
-      myPrint("Invalid direction passed to wallIsPresent!");
-      return false;
-  }
-}
-
-void FloodFillMap::doFloodFill() {
-  int curr_explored_val = 0;
-  bool maze_val_changed = true;
-  while (maze_val_changed) {
-    maze_val_changed = false;
-    for (int r = 1; r <= n_rows; r++) {
-      for (int c = 1; c <= n_cols; c++) {
-        int curr_cell_val = getCellValue(r,c);
-        if (curr_cell_val == curr_explored_val) {
-          //cout << "\n\nr" << to_string(r) << " c" << to_string(c) << ":\n";
-          for (auto direction_it = all_directions.begin();
-                      direction_it != all_directions.end();
-                      direction_it++)
-            {
-            //cout << "  " << dir2String(*direction_it) << ": ";
-            if (!wallIsPresent(r,c,*direction_it)) {
-              //cout << "open - ";
-              Cell neighbour = getNeighbourCell(r,c,*direction_it);
-              if (getCellValue(neighbour.row, neighbour.col) == N) {
-                //cout << "Changing value of cell: " << cell2String(neighbour)
-                //     << " to " << curr_cell_val+1 << '\n';
-                setCellValue(neighbour.row, neighbour.col, curr_cell_val + 1);
-                maze_val_changed = true;
-              }// else cout << "Already explored\n";
-            }// else cout << "walled\n";
-          }
-        }
-      }
-    }
-    curr_explored_val++;
-    //cout << "\n \n---- Now looking at cells w. value " << curr_explored_val << "-------";
-  }
-  return;
-}
-
-vector<Path> FloodFillMap::findShortestPaths(Cell c) {
-  vector<Path> paths;
-  int curr_val = getCellValue(c.row, c.col);
-  if (curr_val == 0) {
-    Path empty_path;
-    paths.push_back(empty_path);
-    return paths; // Already at destination
-  }
-  for (auto dir_it = all_directions.begin(); dir_it != all_directions.end(); dir_it++) {
-    if (wallIsPresent(c.row,c.col,*dir_it)) continue;
-    Cell neighbour = getNeighbourCell(c.row,c.col,*dir_it);
-    if (getCellValue(neighbour.row,neighbour.col) == curr_val - 1) {
-      auto sub_paths = findShortestPaths(neighbour);
-      for (auto path = sub_paths.begin(); path != sub_paths.end(); path++) {
-        (*path).push_back(*dir_it);
-        paths.push_back(*path);
-      }
-    }
-  }
-  return paths;
-}
-
-void FloodFillMap::highlightPath(Path p) {
-  int index = p.size();
-  Cell curr = start_cell;
-  for (int r = 1; r <= n_rows; r++) {
-    for (int c = 1; c <= n_cols; c++) {
-      setCellValue(r, c, N); // Empty all cell values
-    }
-  }
-  for (auto dir_it = p.rbegin(); dir_it != p.rend(); dir_it++) {
-    Cell next = getNeighbourCell(curr.row, curr.col, *dir_it);
-    setCellValue(next.row, next.col, --index); // Refill values on the path
-    curr = next;
-  }
-}
-
-void FloodFillMap::display() {
-  bool h_wall = true;
-  bool v_wall = true;
-  auto h_walls_row = h_walls.begin();
-  auto v_walls_row = v_walls.begin();
-  Cell curr = {1,1};
-  for (int r = 0; r < (int)(cell_vals.size() + h_walls.size()); r++) {
-    string row_string = "";
-    v_wall = true;
-    if (h_wall) { // Row with horizontal walls
-      auto h_walls_it = h_walls_row->begin();
-      while (h_walls_it != h_walls_row->end()) {
-        if (v_wall) row_string.append(" ");
-        else row_string.append(*(h_walls_it++) ? "---" : "   ");
-        v_wall = !v_wall;
-      }
-      row_string.append(" ");
-    } else { // Row with cells or vertical walls
-      auto v_walls_it = v_walls_row->begin();
-      curr.col = 1;
-      while (v_walls_it != v_walls_row->end()) {
-        if (v_wall) row_string.append(*(v_walls_it++) ? "|" : " "); // vertical wall col
-        else { // cell col
-          if (curr.row == start_cell.row && curr.col == start_cell.col) {
-            // Display starting position
-            row_string.append(" " + dir2String(start_dir) + " ");
-
-          } else if (getCellValue(curr.row, curr.col) == N) {
-            // Display empty cell
-            row_string.append("   ");
-          } else {
-            // Display path index of cell
-            string value = to_string(getCellValue(curr.row, curr.col));
-            string rear_padding = string(2 - value.length(), ' ');
-            row_string.append(" " + value + rear_padding);
-          }
-          curr.col++;
-        }
-        v_wall = !v_wall;
-      }
-      curr.row++;
-      h_walls_row++;
-      v_walls_row++;
-    }
-    h_wall = !h_wall;
-    myPrint(row_string);
-  }
-}*/
 
 // -------------------- PHASE A HELPER FUNCTIONS ---------------------
 std::string HatTrickController::heading_to_string(double heading) {
@@ -723,7 +460,6 @@ HatTrickController::HatTrickController(std::string motionPlan) {
           -(motionPlan[0] - '0')*CELL_WIDTH, 
           char_to_heading(motionPlan[2]);
   target = pose;
-  targetCentre = pose;
 
   invKMatrix << WHEEL_RADIUS/2,            WHEEL_RADIUS/2,
                 0,                         0,
@@ -731,7 +467,7 @@ HatTrickController::HatTrickController(std::string motionPlan) {
                 
   // EKF
   // Uncertainty in observations
-  ekfR << pow(0.005,2), 0, 
+  ekfR << pow(0.01,2), 0, 
           0, pow(0.01,2);
   // Uncertainty in model prediction
   ekfQ = MatrixXd::Zero(3,3);
@@ -782,8 +518,9 @@ void HatTrickController::doUpdate() {
   
   this->updateWheelVelocities();
   if (idleCount >= 1) {
+    motionPlanStep++;
     // Print current state
-    std::cout << MESSAGE_PREFIX << "Step: " << std::setw(3) << std::setfill('0') << motionPlanStep - 2
+    std::cout << MESSAGE_PREFIX << "Step: " << std::setw(3) << std::setfill('0') << motionPlanStep - 3
               << ", Row: " << (int)round(-pose(1)/CELL_WIDTH) << ", Column: " << (int)round(pose(0)/CELL_WIDTH)
               << ", Heading: " << heading_to_string(pose(2))
               << ", Left Wall: " << ((dsLeft->getValue() < WALL_THRESHOLD) ? "Y":"N")
@@ -800,35 +537,27 @@ void HatTrickController::doUpdate() {
               << "," << ((dsRight->getValue() < WALL_THRESHOLD) ? "Y":"N")
               << "\n";
     */
-    do {
-      motionPlanStep++;
-      if (motionPlanStep < motionPlan.length()) {
+    if (motionPlanStep < motionPlan.length()) {
       // Advance to next step if one exists, else complete
-        action = actionList.find(motionPlan[motionPlanStep]);
-        switch(action) {
-          case(0):
-            target = targetCentre;
-            move_forward(targetCentre);
-            target = (target+targetCentre)/2;
-            target(2) = targetCentre(2);
-            break;
-          case(1):
-            targetCentre(2) += M_PI/2;
-            continue;
-          case(2):
-            targetCentre(2) -= M_PI/2;
-            continue;
-        }
-      } else {
-          complete = true;
-          std::cout << MESSAGE_PREFIX << "Motion plan executed!\n";
+      action = actionList.find(motionPlan[motionPlanStep]);
+      switch(action) {
+        case(0):
+          move_forward(target);
           break;
-      }
-    } while (action != 0);
-    positioned = false;
-    rotated = false;      
+        case(1):
+          target(2) += M_PI/2;
+          break;
+        case(2):
+          target(2) -= M_PI/2;
+          break;
+      } 
+      positioned = false;
+      rotated = false;
+    } else {
+      complete = true;
+      std::cout << MESSAGE_PREFIX << "Motion plan executed!\n";
+    }
     idleCount = 0;
-    this->updateWheelVelocities();
   }
   // Do not allow an overall w > 2pi/3 as it slips too much
   double magW = abs(-setLeftVelocity + setRightVelocity)/2;
@@ -924,14 +653,14 @@ void HatTrickController::updateStepCamera() {
       // Find columns and adjust x
       double eCamX = round((pose(0) - CELL_WIDTH/2 + seamOffset*cos(pose(2)))/CELL_WIDTH)*CELL_WIDTH;
       eCamX += CELL_WIDTH/2;
-      pose(0) += (eCamX - seamOffset*cos(pose(2)) - pose(0))*0.05;
+      pose(0) += (eCamX - seamOffset*cos(pose(2)) - pose(0))*0.2;
     } else {
       // Find rows and adjust y
       double eCamY = round((pose(1) + CELL_WIDTH/2 + seamOffset*sin(pose(2)))/CELL_WIDTH)*CELL_WIDTH;
       eCamY -= CELL_WIDTH/2;
-      pose(1) += (eCamY - seamOffset*sin(pose(2)) - pose(1))*0.05;
+      pose(1) += (eCamY - seamOffset*sin(pose(2)) - pose(1))*0.2;
     }
-    pose(2) += atan2(rightRowPos-leftRowPos, rightColPos-leftColPos)*0.05; 
+    pose(2) += atan2(rightRowPos-leftRowPos, rightColPos-leftColPos)*0.2; 
   }
 }
 
@@ -1016,15 +745,14 @@ void HatTrickController::updateWheelVelocities() {
     if (offsetAngle > M_PI/2) offsetAngle -= M_PI;
     // Angle required to rotate robot to correct rotation
     double errorAngle = 0;
-    if ((target(2)-pose(2))*offsetAngle < 0 && abs(offsetAngle) > M_PI/3) offsetAngle*=-1;
     if (positioned) errorAngle = target(2) - pose(2);
     else errorAngle = offsetAngle;
     if (abs(errorAngle) < acceptableRotationError2) rotated = true;
     Matrix<double, 3, 1> columnVector(rotated ? errorDistance:0, 0, errorAngle*kpw);
     Matrix<double, 2, 1> invKSolution = invKMatrix.colPivHouseholderQr().solve(columnVector);
     // Scale desired speed to remain within limits
-    if (invKSolution.maxCoeff() > 0) invKSolution *= MAX_SPEED/(kp*invKSolution.maxCoeff());
-    if (invKSolution.minCoeff() < 0) invKSolution *= -MAX_SPEED/(kp*invKSolution.minCoeff());
+    if (invKSolution.maxCoeff() > MAX_SPEED) invKSolution *= MAX_SPEED/(kp*invKSolution.maxCoeff());
+    if (invKSolution.minCoeff() < -MAX_SPEED) invKSolution *= -MAX_SPEED/(kp*invKSolution.minCoeff());
     setLeftVelocity = kp*invKSolution(0);
     setRightVelocity = kp*invKSolution(1);
   }
