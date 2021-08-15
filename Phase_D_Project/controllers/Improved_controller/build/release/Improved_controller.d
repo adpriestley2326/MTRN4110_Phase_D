@@ -115,4 +115,5 @@ build/release/Improved_controller.o: Improved_controller.cpp \
  Eigen/src/Eigenvalues/./ComplexSchur.h Eigen/src/Eigenvalues/RealQZ.h \
  Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
  Eigen/src/Eigenvalues/./RealQZ.h \
- Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h FloodFillMap.hpp
+ Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h FloodFillMap.hpp \
+ helper.hpp

@@ -1,3 +1,4 @@
+#pragma once
 #include <webots/Robot.hpp>
 #include <webots/Keyboard.hpp>
 #include <webots/Motor.hpp>
@@ -15,6 +16,8 @@
 #include <cmath>
 
 #include <Eigen/Dense>
+#include "FloodFillMap.hpp"
+
 using namespace Eigen;
 using namespace webots;
 
@@ -47,6 +50,10 @@ class HatTrickController {
   double clamp(double v, double lo, double hi);
   bool detectBlackLine(const unsigned char *image, int width, int height);
   void manualDrive();
+  // Map-related
+  Cell getCell();
+  Direction heading_to_dir(double heading);
+  bool visitedCell(Cell pos);
 
   // Constants
   const std::string MOTION_PLAN_FILE_NAME = "../../PathPlan.txt";
@@ -92,6 +99,7 @@ class HatTrickController {
   std::string motionPlan;
   Matrix<double, 3, 1> pose;
   Matrix<double, 3, 1> target;
+  Matrix<double, 3, 1> targetCentre;
   Matrix<double, 3, 2> invKMatrix;
   double setLeftVelocity = 0;
   double setRightVelocity = 0;
@@ -99,6 +107,8 @@ class HatTrickController {
   unsigned int motionPlanStep = 2;
   int cycleCount = 0;
   int idleCount = 0;
+  bool mapped = false;
+  bool speedrun = false;
   bool complete = false;
   bool positioned = false; 
   bool rotated = false;
@@ -114,6 +124,13 @@ class HatTrickController {
   bool autopilot = true;
   double speed = 0;
   double yaw_speed =0;
-
-  //TODO: Include mapping/planning in here as a composition(?)
+  // For dynamic mapping
+  FloodFillMap *map;
+  std::vector<Cell> visited;
+  std::vector<Cell> toVisit;
+  Cell start;
+  Direction start_dir;
+  Cell endGoal;
+  Cell currentGoal;
+  void regenerateMotionPlan();
 };

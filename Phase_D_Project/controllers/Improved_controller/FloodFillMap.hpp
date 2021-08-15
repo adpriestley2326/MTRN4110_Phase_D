@@ -1,3 +1,4 @@
+#pragma once
 // Floodfill-map.hpp
 #include <stack>
 #include <vector>
@@ -12,7 +13,7 @@ struct Cell {
 };
 
 enum Direction {
-  north,
+  north=0,
   east,
   south,
   west,
@@ -41,11 +42,15 @@ class FloodFillMap {
     vector<Cell> getNeighbourCells(Cell c);
     int setCellValue(int row, int col, int value);
     bool wallIsPresent(int row, int col, Direction dir);
-    void addWall(Cell c, Direction dir);
+    bool addWall(Cell c, Direction dir);
     void doFloodFill(); 
     void updateFloodFill(Cell c);
     vector<Path> findShortestPaths(Cell c);
     void highlightPath(Path p);
     void display();
+    void resetValues();
+    void setPosition(Cell new_start, Direction dir);
+    void changeTarget(Cell new_start, Direction dir, Cell new_target);
+    int getAction(Direction d);
 };
 
