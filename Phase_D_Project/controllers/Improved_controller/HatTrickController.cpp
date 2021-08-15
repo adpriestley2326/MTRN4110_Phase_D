@@ -21,6 +21,7 @@ HatTrickController::HatTrickController(std::string motionPlan) {
           -(motionPlan[0] - '0')*CELL_WIDTH, 
           char_to_heading(motionPlan[2]);
   target = pose;
+  targetCentre = pose;
 
   invKMatrix << WHEEL_RADIUS/2,            WHEEL_RADIUS/2,
                 0,                         0,
@@ -157,13 +158,12 @@ void HatTrickController::doUpdate() {
             toVisit.pop_back();
             map->changeTarget(pos, dir, currentGoal);
         } else {
-            pose(2) = fmod(pose(2), 2*M_PI);
-            target(2) = fmod(target(2), 2*M_PI);
             if (pos.row != start.row || pos.col != start.col) {
                currentGoal = start; 
                map->changeTarget(pos, dir, currentGoal);
             } else if (target(2) != char_to_heading(motionPlan[2])) {
                 target(2) = char_to_heading(motionPlan[2]);
+                pose(2) = fmod(pose(2), 2*M_PI);
                 idleCount = 0;
                 return;
             } else {
@@ -199,11 +199,23 @@ void HatTrickController::doUpdate() {
     rotated = false;
     idleCount = 0;
   } else if (idleCount > 0 && !speedrun) {
-      speedrun = true;
-      motionPlanStep = 3;
-      map->changeTarget(start, start_dir, endGoal);
-      this->regenerateMotionPlan();
-  } else if (idleCount > 0 && speedrun) {
+        speedrun = true;
+        motionPlanStep = 2;
+        map->changeTarget(start, start_dir, endGoal);
+        this->regenerateMotionPlan();
+        std::cout << "Motion Plan: " << motionPlan << "\n";
+        pose << (motionPlan[1] - '0')*CELL_WIDTH, 
+          -(motionPlan[0] - '0')*CELL_WIDTH, 
+          char_to_heading(motionPlan[2]);
+        target = pose;
+        kp = 15;
+        kpw = 5; // multiplier on bearing error
+        acceptablePositionError = 0.01;
+        acceptableRotationError = 15*M_PI/180.0;
+        acceptableRotationError2 = 35*M_PI/180.0; // used for enabling forward movement to next target
+
+  }
+  if (idleCount > 0 && speedrun) {
       std::cout << MESSAGE_PREFIX << "Step: " << std::setw(3) << std::setfill('0') << motionPlanStep - 2
               << ", Row: " << (int)round(-pose(1)/CELL_WIDTH) << ", Column: " << (int)round(pose(0)/CELL_WIDTH)
               << ", Heading: " << heading_to_string(pose(2))
@@ -216,11 +228,16 @@ void HatTrickController::doUpdate() {
       if (motionPlanStep < motionPlan.length()) {
       // Advance to next step if one exists, else complete
         action = actionList.find(motionPlan[motionPlanStep]);
+        bool lastF = false;
+        std::string key ("F");
+        std::size_t found = motionPlan.rfind(key);
+        if (found != std::string::npos && motionPlanStep == found) lastF = true;
         switch(action) {
           case(0):
             target = targetCentre;
             move_forward(targetCentre);
-            target = (target+targetCentre)/2;
+            if (!lastF) target = (target+targetCentre)/2;
+            else target = targetCentre;
             target(2) = targetCentre(2);
             break;
           case(1):
@@ -426,6 +443,7 @@ void HatTrickController::updateWheelVelocities() {
     if (offsetAngle > M_PI/2) offsetAngle -= M_PI;
     // Angle required to rotate robot to correct rotation
     double errorAngle = 0;
+    if ((target(2)-pose(2))*offsetAngle < 0 && abs(offsetAngle) > M_PI/3) offsetAngle*=-1;
     if (positioned) errorAngle = target(2) - pose(2);
     else errorAngle = offsetAngle;
     if (abs(errorAngle) < acceptableRotationError2) rotated = true;
