@@ -182,7 +182,9 @@ void HatTrickController::doUpdate() {
         toVisit.pop_back();
         toVisit.push_back(currentGoal);
         currentGoal = temp;
-        target = pose;
+        target(0) = (pos.col-1)*CELL_WIDTH;
+        target(1) = -(pos.row-1)*CELL_WIDTH;
+        target(2) = round(pose(2)/(M_PI/2))*M_PI/2;
         map->changeTarget(pos, dir, currentGoal);
     } 
 
@@ -217,9 +219,9 @@ void HatTrickController::doUpdate() {
         kp = 15;
         kpw = 5; // multiplier on bearing error
         acceptablePositionError = 0.01;
-        acceptableRotationError = 15*M_PI/180.0;
+        acceptableRotationError = 10*M_PI/180.0;
         acceptableRotationError2 = 35*M_PI/180.0; // used for enabling forward movement to next target
-
+        kcamera = 0.05;
   }
   if (idleCount > 0 && speedrun) {
       std::cout << MESSAGE_PREFIX << "Step: " << std::setw(3) << std::setfill('0') << motionPlanStep - 2
@@ -359,14 +361,14 @@ void HatTrickController::updateStepCamera() {
       // Find columns and adjust x
       double eCamX = round((pose(0) - CELL_WIDTH/2 + seamOffset*cos(pose(2)))/CELL_WIDTH)*CELL_WIDTH;
       eCamX += CELL_WIDTH/2;
-      pose(0) += (eCamX - seamOffset*cos(pose(2)) - pose(0))*0.05;
+      pose(0) += (eCamX - seamOffset*cos(pose(2)) - pose(0))*kcamera;
     } else {
       // Find rows and adjust y
       double eCamY = round((pose(1) + CELL_WIDTH/2 + seamOffset*sin(pose(2)))/CELL_WIDTH)*CELL_WIDTH;
       eCamY -= CELL_WIDTH/2;
-      pose(1) += (eCamY - seamOffset*sin(pose(2)) - pose(1))*0.05;
+      pose(1) += (eCamY - seamOffset*sin(pose(2)) - pose(1))*kcamera;
     }
-    pose(2) += atan2(rightRowPos-leftRowPos, rightColPos-leftColPos)*0.05; 
+    pose(2) += atan2(rightRowPos-leftRowPos, rightColPos-leftColPos)*kcamera; 
   }
 }
 
@@ -379,11 +381,11 @@ void HatTrickController::updateStepDistanceSensors() {
   // with cardinal directions to avoid corners being misidentified as edges.
   double headingTest = fmod(pose(2),M_PI/2);
   if (headingTest < 0) headingTest += M_PI/2;
-  for (int d = 0; d < 4 && abs(M_PI/4 - headingTest) > 35*M_PI/180.0; d++) {
+  for (int d = 0; d < 4 && abs(M_PI/4 - headingTest) > 37*M_PI/180.0; d++) {
     // can't estimate well with only one ray
     if (dsValues[2*d] ==  DS_RANGE || dsValues[2*d+1] == DS_RANGE) continue;
     // can't estimate well if the wall is too close and being pushed by the robot
-    if (dsValues[2*d] <= 0.06 || dsValues[2*d+1] <= 0.06) continue;
+    if (d == 0 && (dsValues[2*d] <= 0.06 || dsValues[2*d+1] <= 0.06)) continue;
     p1(0) = pose(0) + dsValues[2*d]*cos(pose(2) + dsRotation[2*d]);
     p1(1) = pose(1) + dsValues[2*d]*sin(pose(2) + dsRotation[2*d]);
     p2(0) = pose(0) + dsValues[2*d+1]*cos(pose(2) + dsRotation[2*d+1]);

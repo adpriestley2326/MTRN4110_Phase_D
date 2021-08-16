@@ -82,6 +82,7 @@ class HatTrickController {
   double acceptablePositionError = 0.01;
   double acceptableRotationError = 0.5*M_PI/180.0;
   double acceptableRotationError2 = 0.5*M_PI/180.0; // used for enabling forward movement to next target
+  double kcamera = 0.2;
   
   // EKF Stuff
   Matrix<double, 2, 2> ekfR;
