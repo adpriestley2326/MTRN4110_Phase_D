@@ -173,14 +173,18 @@ void HatTrickController::doUpdate() {
                 std::cout << MESSAGE_PREFIX << "Finished Exploring!\n";
             }
         }
-    } else if ((target-pose).norm() > CELL_WIDTH*1.1) {
+    } else {
+        map->setPosition(pos, dir);
+    }
+
+    if ((target-pose).norm() > CELL_WIDTH*1.1) {
         Cell temp = toVisit.back();
         toVisit.pop_back();
         toVisit.push_back(currentGoal);
         currentGoal = temp;
-    } else {
-        map->setPosition(pos, dir);
-    }
+        target = pose;
+        map->changeTarget(pos, dir, currentGoal);
+    } 
 
     // Advance to next step
     if (!mapped) {
