@@ -382,11 +382,15 @@ void HatTrickController::updateStepDistanceSensors() {
   for (int d = 0; d < 4 && abs(M_PI/4 - headingTest) > 35*M_PI/180.0; d++) {
     // can't estimate well with only one ray
     if (dsValues[2*d] ==  DS_RANGE || dsValues[2*d+1] == DS_RANGE) continue;
+    // can't estimate well if the wall is too close and being pushed by the robot
+    if (dsValues[2*d] <= 0.06 || dsValues[2*d+1] <= 0.06) continue;
     p1(0) = pose(0) + dsValues[2*d]*cos(pose(2) + dsRotation[2*d]);
     p1(1) = pose(1) + dsValues[2*d]*sin(pose(2) + dsRotation[2*d]);
     p2(0) = pose(0) + dsValues[2*d+1]*cos(pose(2) + dsRotation[2*d+1]);
     p2(1) = pose(1) + dsValues[2*d+1]*sin(pose(2) + dsRotation[2*d+1]);
     
+
+
     // Adjust rotation 
     errorRotation = atan2(p2(1)-p1(1), p2(0)-p1(0)) - M_PI/2 - dsRotation[2*d]/2 - dsRotation[2*d+1]/2 - pose(2);
     // Make error between -pi and pi
