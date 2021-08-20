@@ -115,15 +115,6 @@ void HatTrickController::doUpdate() {
   else this->manualDrive(); 
   if (idleCount >= 1 && !mapped) {
     motionPlanStep++;
-    // Print current state
-    map->display();
-    std::cout << MESSAGE_PREFIX << "Step: " << std::setw(3) << std::setfill('0') << motionPlanStep - 3
-              << ", Row: " << (int)round(-pose(1)/CELL_WIDTH) << ", Column: " << (int)round(pose(0)/CELL_WIDTH)
-              << ", Heading: " << heading_to_string(pose(2))
-              << ", Left Wall: " << ((dsLeft->getValue() < WALL_THRESHOLD) ? "Y":"N")
-              << ", Front Wall: " <<  ((dsFront->getValue() < WALL_THRESHOLD) ? "Y":"N")
-              << ", Right Wall: " << ((dsRight->getValue() < WALL_THRESHOLD) ? "Y":"N")
-              << "\n";
     Cell pos = this->getCell();
     Direction dir = heading_to_dir(pose(2));
 
@@ -153,7 +144,6 @@ void HatTrickController::doUpdate() {
         } else it++;
     }
     //std::cout << "now at " << pos.col << pos.row << "\n"; 
-
     if (pos.row == currentGoal.row && pos.col == currentGoal.col) {
         if (toVisit.size() != 0) {
             currentGoal = toVisit.back();
@@ -188,6 +178,16 @@ void HatTrickController::doUpdate() {
         map->changeTarget(pos, dir, currentGoal);
     } 
 
+     // Print current state
+    map->display();
+    std::cout << MESSAGE_PREFIX << "Step: " << std::setw(3) << std::setfill('0') << motionPlanStep - 3
+              << ", Row: " << (int)round(-pose(1)/CELL_WIDTH) << ", Column: " << (int)round(pose(0)/CELL_WIDTH)
+              << ", Heading: " << heading_to_string(pose(2))
+              << ", Left Wall: " << ((dsLeft->getValue() < WALL_THRESHOLD) ? "Y":"N")
+              << ", Front Wall: " <<  ((dsFront->getValue() < WALL_THRESHOLD) ? "Y":"N")
+              << ", Right Wall: " << ((dsRight->getValue() < WALL_THRESHOLD) ? "Y":"N")
+              << "\n";
+
     // Advance to next step
     if (!mapped) {
         action = map->getAction(dir);
@@ -217,20 +217,13 @@ void HatTrickController::doUpdate() {
           char_to_heading(motionPlan[2]);
         target = pose;
         kp = 15;
-        kpw = 5; // multiplier on bearing error
-        acceptablePositionError = 0.01;
+        kpw = 2.5; // multiplier on bearing error
+        acceptablePositionError = 0.015;
         acceptableRotationError = 10*M_PI/180.0;
         acceptableRotationError2 = 35*M_PI/180.0; // used for enabling forward movement to next target
         kcamera = 0.05;
   }
   if (idleCount > 0 && speedrun) {
-      std::cout << MESSAGE_PREFIX << "Step: " << std::setw(3) << std::setfill('0') << motionPlanStep - 2
-              << ", Row: " << (int)round(-pose(1)/CELL_WIDTH) << ", Column: " << (int)round(pose(0)/CELL_WIDTH)
-              << ", Heading: " << heading_to_string(pose(2))
-              << ", Left Wall: " << ((dsLeft->getValue() < WALL_THRESHOLD) ? "Y":"N")
-              << ", Front Wall: " <<  ((dsFront->getValue() < WALL_THRESHOLD) ? "Y":"N")
-              << ", Right Wall: " << ((dsRight->getValue() < WALL_THRESHOLD) ? "Y":"N")
-              << "\n";
     do {
       motionPlanStep++;
       if (motionPlanStep < motionPlan.length()) {
