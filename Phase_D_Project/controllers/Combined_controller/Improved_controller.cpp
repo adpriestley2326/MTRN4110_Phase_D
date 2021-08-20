@@ -1,15 +1,12 @@
-// File:          Combined_controller.cpp
-// Date:          20/08/21
-// Description:   An integrated phase D solution (without extra features)
-// Author:        Terry Lim, Adam Priestly, Hrithika Nayak
+ // File:          Improved_controller.cpp
+// Date:
+// Description:
+// Author:
 // Modifications:
 
-#include <webots/Robot.hpp>
-
-#include <webots/Motor.hpp>
-#include <webots/DistanceSensor.hpp>
-#include <webots/Camera.hpp>
-
+// You may need to add webots include files such as
+// <webots/DistanceSensor.hpp>, <webots/Motor.hpp>, etc.
+// and/or to add some other includes
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -17,15 +14,10 @@
 #include <iomanip>
 //#include <vector>
 
-#include <FloodFillMap.hpp>
 #include "HatTrickController.hpp"
+#include "helper.hpp"
+#include <FloodFillMap.hpp>
 
-// Motion stuff
-#define _USE_MATH_DEFINES
-#include <cmath>
-
-#include <Eigen/Dense>
-using namespace Eigen;
 using namespace webots;
 
 const std::string MOTION_PLAN_FILE_NAME = "../../PathPlan.txt";
@@ -34,24 +26,26 @@ const std::string MESSAGE_PREFIX = "[MTRN4110_PhaseD] ";
 
 // Path planning stuff
 using namespace std;
+void myPrint(string s);
+
 const string MAP_FILE_NAME = "../../MapBuilt.txt";
 const string PATH_PLAN_FILE_NAME = "../../PathPlan.txt";
 const string OUTPUT_FILE_NAME = "../../Output.txt";
 fstream output_fs;
 fstream path_fs;
 
-void myPrint(string s);
-vector<char> store_row_string(string s);
-//string dir2String (Direction d);
-string cell2String (Cell c);
-int numTurnsInPath(Path p, Direction initial);
-string generateMotionPlan(Path p, Cell initial_cell, Direction initial_dir);
-
 // All the webots classes are defined in the "webots" namespace
 using namespace webots;
 
+// This is the main program of your controller.
+// It creates an instance of your Robot instance, launches its
+// function(s) and destroys it at the end of the execution.
+// Note that only one instance of Robot should be created in
+// a controller program.
+// The arguments of the main function can be specified by the
+// "controllerArgs" field of the Robot node
 int main(int argc, char **argv) {
-  // ------------------ FROM PHASE B - PATH PLANNING STUFF ----------------------
+  // ------------------ PATH PLANNING STUFF ----------------------
   // Open files for writing
   output_fs.open(OUTPUT_FILE_NAME, ios::out);
   path_fs.open(PATH_PLAN_FILE_NAME, ios::out);
@@ -126,7 +120,6 @@ int main(int argc, char **argv) {
   output_fs.close();
 
   
-  // --------------------- FROM PHASE A - MOTION STUFF -----------------------
   std::ifstream inFile;
   inFile.open(MOTION_PLAN_FILE_NAME);
   std::cout << MESSAGE_PREFIX << "Reading in motion plan from " + MOTION_PLAN_FILE_NAME + "...\n";
@@ -151,12 +144,6 @@ int main(int argc, char **argv) {
     robot->doUpdate();
     if (robot->isComplete()) break;
   };
-
-  // Enter here exit cleanup code.
-  inFile.close();
-  outFile.close();
-  delete robot;
-  return 0;
 }
 
 // ---------------- PHASE B HELPER FUNCTIONS & CLASS DEFINITIONS --------------------
@@ -170,87 +157,4 @@ void myPrint(string s) {
     cout << "Warning - could not write to output file!\n";
   }
   return;
-}
-
-vector<char> store_row_string (string s) {
-  vector<char> row;
-  for (int i = 0; i < (int) s.length(); i++) {
-    if (i % 2 != 0) continue;
-    row.push_back((char) s[i]);
-  }
-  return row;
-}
-
-string cell2String (Cell c) {
-  return "(" + to_string(c.row) + ", " + to_string(c.col) + ")";
-}
-
-bool oppositeDirections(Direction a, Direction b) {
-  switch (a) {
-    case north: return b == south;
-    case south: return b == north;
-    case east: return b == west;
-    case west: return b == east;
-  }
-  return false;
-}
-
-int numTurnsInPath(Path p, Direction initial) {
-  int turn_count = 0;
-  Direction facing = initial;
-  for (auto dir_it = p.rbegin(); dir_it != p.rend(); dir_it++) {
-    if (oppositeDirections(facing, *dir_it)) turn_count += 2;
-    else if (facing != *dir_it) turn_count += 1;
-    facing = *dir_it;
-  }
-  return turn_count;
-}
-
-string generateMotionPlan(Path p, Cell initial_cell, Direction initial_dir) {
-  string plan = "";
-  plan.append(to_string(initial_cell.row - 1) + to_string(initial_cell.col - 1));
-  switch (initial_dir) {
-    case north:
-      plan.append("N");
-      break;
-    case south:
-      plan.append("S");
-      break;
-    case east:
-      plan.append("E");
-      break;
-    case west:
-      plan.append("W");
-      break;
-    default:
-      plan.append("-");
-  }
-  Direction facing = initial_dir;
-  auto dir_it = p.rbegin();
-  while(dir_it != p.rend()) {
-    if (facing == *dir_it) {
-      plan.append("F");
-      dir_it++;
-    } else if (oppositeDirections(facing, *dir_it)) {
-      plan.append("LL");
-      facing = *dir_it;
-    } else if (facing != *dir_it) {
-      switch (*dir_it) {
-        case north:
-          plan.append((facing == east) ? "L" : "R");
-          break;
-        case south:
-          plan.append((facing == west) ? "L" : "R");
-          break;
-        case east:
-          plan.append((facing == south) ? "L" : "R");
-          break;
-        case west:
-          plan.append((facing == north) ? "L" : "R");
-          break;
-      }
-      facing = *dir_it;
-    }
-  }  
-  return plan;
 }
