@@ -1,5 +1,6 @@
 #VRML_SIM R2021a utf8
 WorldInfo {
+  basicTimeStep 16
   coordinateSystem "NUE"
 }
 Viewpoint {
@@ -64,8 +65,6 @@ DEF MAZE Group {
       physics Physics {
         density 100
       }
-      linearVelocity 3.7571555611049635e-15 -2.618987647833577e-15 3.847241341353099e-15
-      angularVelocity 1.1814711314346393e-13 -2.7387898909889416e-16 -1.1534836596237872e-13
     }
     DEF cornerStone Solid {
       translation 0.7425000000000183 0.03249942611500034 -0.41249999999998166
@@ -115,8 +114,6 @@ DEF MAZE Group {
       physics Physics {
         density 100
       }
-      linearVelocity 3.7571555611049635e-15 -2.618987647833577e-15 3.847241341353099e-15
-      angularVelocity 1.1814711314346393e-13 -2.7387898909889416e-16 -1.1534836596237872e-13
     }
     DEF cornerStone Solid {
       translation 0.7425000000000183 0.03249942611500034 0.4125000000000183
@@ -166,8 +163,6 @@ DEF MAZE Group {
       physics Physics {
         density 100
       }
-      linearVelocity 3.7571555611049635e-15 -2.618987647833577e-15 3.847241341353099e-15
-      angularVelocity 1.1814711314346393e-13 -2.7387898909889416e-16 -1.1534836596237872e-13
     }
     DEF cornerStone Solid {
       translation -0.7424999999999818 0.03249942611500034 0.4125000000000183
@@ -217,8 +212,6 @@ DEF MAZE Group {
       physics Physics {
         density 100
       }
-      linearVelocity 3.7571555611049635e-15 -2.618987647833577e-15 3.847241341353099e-15
-      angularVelocity 1.1814711314346393e-13 -2.7387898909889416e-16 -1.1534836596237872e-13
     }
     DEF hWall Solid {
       translation 6.196502993979513e-13 0.032444141868562995 -0.41249999977164487
@@ -239,8 +232,6 @@ DEF MAZE Group {
       physics Physics {
         density 100
       }
-      linearVelocity 2.831666267790238e-15 -6.692164521480357e-11 5.027542617837304e-13
-      angularVelocity 1.5469327929522967e-11 3.535069340347544e-18 -8.72187013192516e-14
     }
     DEF hWall Solid {
       translation 6.196502993979513e-13 0.032444141868562995 0.4125000002283551
@@ -260,8 +251,6 @@ DEF MAZE Group {
       physics Physics {
         density 100
       }
-      linearVelocity 2.831666267790238e-15 -6.692164521480357e-11 5.027542617837304e-13
-      angularVelocity 1.5469327929522967e-11 3.535069340347544e-18 -8.72187013192516e-14
     }
     DEF vWall Solid {
       translation -0.7424999999263683 0.03246939280469762 4.0714155686236423e-13
@@ -282,8 +271,6 @@ DEF MAZE Group {
       physics Physics {
         density 100
       }
-      linearVelocity 2.1298217186695418e-13 -3.6707320943535546e-11 2.869411953506753e-15
-      angularVelocity 8.823539493126655e-14 2.9844005774492656e-17 -6.553386556813195e-12
     }
     DEF vWall Solid {
       translation 0.7425000000736318 0.03246939280469762 4.0714155686236423e-13
@@ -304,8 +291,6 @@ DEF MAZE Group {
       physics Physics {
         density 100
       }
-      linearVelocity 2.1298217186695418e-13 -3.6707320943535546e-11 2.869411953506753e-15
-      angularVelocity 8.823539493126655e-14 2.9844005774492656e-17 -6.553386556813195e-12
     }
     DEF Pole MazeBlock {
       translation -0.9049999999999255 -1.1477699993350798e-06 -0.577499999999925
@@ -687,10 +672,6 @@ DEF Target_Fake Transform {
   ]
 }
 DEF HatTrick E-puck {
-  hidden position_0_0 5.1784117651683985
-  hidden position_0_1 9.604163132242272
-  hidden rotation_1 -1 0 0 5.1784117651683985
-  hidden rotation_2 0.9999999999999999 0 0 2.962207482116901
   translation -0.652048 0.00202656 -0.332158
   rotation 0.007460991240039996 0.9999721661984904 -2.092880347843236e-05 3.13313
   controller "Combined_controller"

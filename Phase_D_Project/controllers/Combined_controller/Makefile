@@ -12,6 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifeq ($(OS),Windows_NT)
+    DETECTED_OS := windows
+    LIB := python37.lib
+else
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Linux)
+        DETECTED_OS := linux
+        LIB := libpython3.7m.so
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        DETECTED_OS := macos
+        LIB := python3.7m
+    endif
+endif
+
 ### Generic Makefile.include for Webots controllers, physics plugins, robot
 ### window libraries, remote control libraries and other libraries
 ### to be used with GNU make
@@ -39,16 +54,16 @@
 ###
 ### ---- C++ Sources ----
 ### if your program uses several C++ source files:
-### CXX_SOURCES = my_plugin.cc my_clever_algo.cpp my_graphics.c++
+CXX_SOURCES = Combined_controller.cpp FloodFillMap.cpp HatTrickController.cpp
 ###
 ### ---- Compilation options ----
 ### if special compilation flags are necessary:
-### CFLAGS = -Wno-unused-result
+CFLAGS = -D_hypot=hypot
 ###
 ### ---- Linked libraries ----
 ### if your program needs additional libraries:
-### INCLUDE = -I"/my_library_path/include"
-### LIBRARIES = -L"/path/to/my/library" -lmy_library -lmy_other_library
+# INCLUDE = -I C:/Python39/include
+# LIBRARIES = -L C:/Python39/libs
 ###
 ### ---- Linking options ----
 ### if special linking flags are needed:

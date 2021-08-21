@@ -1,7 +1,15 @@
 #include "HatTrickController.hpp"
+#include "helper.hpp"
 
 HatTrickController::HatTrickController(std::string motionPlan) {
   this->motionPlan = motionPlan;
+  // Do floodfill on a map without walls
+  start = {1,1}; // My cell convention starts at 1, not 0
+  endGoal = {3,5};
+  currentGoal = {3,5};
+  start_dir = south;
+  this->map = new FloodFillMap(5, 9, start, currentGoal, start_dir);
+  map->doFloodFill();
   // create the Robot instance.
   this->robot = new Robot();
   this->keyboard = new Keyboard();
@@ -13,6 +21,7 @@ HatTrickController::HatTrickController(std::string motionPlan) {
           -(motionPlan[0] - '0')*CELL_WIDTH, 
           char_to_heading(motionPlan[2]);
   target = pose;
+  targetCentre = pose;
 
   invKMatrix << WHEEL_RADIUS/2,            WHEEL_RADIUS/2,
                 0,                         0,
@@ -20,14 +29,13 @@ HatTrickController::HatTrickController(std::string motionPlan) {
                 
   // EKF
   // Uncertainty in observations
-  ekfR << pow(0.01,2), 0, 
+  ekfR << pow(0.005,2), 0, 
           0, pow(0.01,2);
   // Uncertainty in model prediction
   ekfQ = MatrixXd::Zero(3,3);
   ekfQ(0,0) = pow(0.01*TIME_STEP/1000.0, 2);
   ekfQ(1,1) = ekfQ(0,0);
   ekfQ(2,2) = MAX_OMEGA*ekfQ(0,0);
-
 }
 
 HatTrickController::~HatTrickController() {
@@ -68,43 +76,110 @@ void HatTrickController::doUpdate() {
   this->predictionStep();
   this->updateStepCamera();
   this->updateStepDistanceSensors();
-  int c = -1;
-  do {
-      c = this->keyboard->getKey();
-      if (c == -1)
-        break;
-      autopilot = false;
-      switch (c) {
-        case ('A'):
-          autopilot = true;
-          break;
-        case (keyboard->UP):
-          speed = MAX_SPEED/10;
-          yaw_speed = 0;
-          break;
-        case (keyboard->DOWN):
-          speed = -MAX_SPEED/10;
-          yaw_speed = 0;
-          break;
-        case (keyboard->RIGHT):
-          yaw_speed = -MAX_OMEGA;
-          speed = 0;
-          break;
-        case (keyboard->LEFT):
-          yaw_speed = MAX_OMEGA;
-          speed = 0;
-          break;
-        case ' ':
-          speed = 0;
-          yaw_speed = 0;
-          break;
-      }
+  if (!speedrun) {
+    int c = -1;
+    do {
+        c = this->keyboard->getKey();
+        if (c == -1)
+            break;
+        autopilot = false;
+        switch (c) {
+            case ('A'):
+            idleCount++;
+            autopilot = true;
+            break;
+            case (keyboard->UP):
+            speed = MAX_SPEED/10;
+            yaw_speed = 0;
+            break;
+            case (keyboard->DOWN):
+            speed = -MAX_SPEED/10;
+            yaw_speed = 0;
+            break;
+            case (keyboard->RIGHT):
+            yaw_speed = -MAX_OMEGA;
+            speed = 0;
+            break;
+            case (keyboard->LEFT):
+            yaw_speed = MAX_OMEGA;
+            speed = 0;
+            break;
+            case ' ':
+            speed = 0;
+            yaw_speed = 0;
+            break;
+        }
     } while (c);
+  }
   if (autopilot) this->updateWheelVelocities();
   else this->manualDrive(); 
-  if (idleCount >= 1) {
+  if (idleCount >= 1 && !mapped) {
     motionPlanStep++;
-    // Print current state
+    Cell pos = this->getCell();
+    Direction dir = heading_to_dir(pose(2));
+
+    std::vector<Cell> adjacents = map->getNeighbourCells(pos);
+
+    if (dsLeft->getValue() < WALL_THRESHOLD) map->addWall(pos, heading_to_dir(pose(2)+M_PI/2));
+    if (dsFront->getValue() < WALL_THRESHOLD) map->addWall(pos, heading_to_dir(pose(2)));
+    if (dsRight->getValue() < WALL_THRESHOLD) map->addWall(pos, heading_to_dir(pose(2)-M_PI/2));
+    
+    map->updateFloodFill(pos);
+    for (unsigned int i = 0; i < adjacents.size(); i++) map->updateFloodFill(adjacents[i]);
+
+    std::vector<Cell> visitable = map->getNeighbourCells(pos);
+    for (unsigned int i = 0; i < visitable.size(); i++) {
+        if (!visitedCell(visitable[i])) {
+            visited.push_back(visitable[i]);
+            toVisit.push_back(visitable[i]);
+            //std::cout << "adding " << visitable[i].col << visitable[i].row << "\n"; 
+        }
+    }
+
+    for (auto it = toVisit.begin(); it != toVisit.end();) {
+        Cell temp = *it;
+        if (temp.row == pos.row && temp.col == pos.col) {
+            toVisit.erase(it);
+            //std::cout << "adding " << visitable[i].col << visitable[i].row << "\n"; 
+        } else it++;
+    }
+    //std::cout << "now at " << pos.col << pos.row << "\n"; 
+    if (pos.row == currentGoal.row && pos.col == currentGoal.col) {
+        if (toVisit.size() != 0) {
+            currentGoal = toVisit.back();
+            toVisit.pop_back();
+            map->changeTarget(pos, dir, currentGoal);
+        } else {
+            if (pos.row != start.row || pos.col != start.col) {
+               currentGoal = start; 
+               map->changeTarget(pos, dir, currentGoal);
+            } else if (target(2) != char_to_heading(motionPlan[2])) {
+                target(2) = char_to_heading(motionPlan[2]);
+                pose(2) = fmod(pose(2), 2*M_PI);
+                idleCount = 0;
+                return;
+            } else {
+                mapped = true;
+                std::cout << MESSAGE_PREFIX << "Finished Exploring!\n";
+            }
+        }
+    } else {
+        map->setPosition(pos, dir);
+    }
+
+    if ((target-pose).norm() > CELL_WIDTH*1.1) {
+        Cell temp = toVisit.back();
+        toVisit.pop_back();
+        toVisit.push_back(currentGoal);
+        currentGoal = temp;
+        target(0) = (pos.col-1)*CELL_WIDTH;
+        target(1) = -(pos.row-1)*CELL_WIDTH;
+        target(2) = round(pose(2)/(M_PI/2))*M_PI/2;
+        map->changeTarget(pos, dir, currentGoal);
+    } 
+
+     // Print current state
+    map->display();
     std::cout << MESSAGE_PREFIX << "Step: " << std::setw(3) << std::setfill('0') << motionPlanStep - 3
               << ", Row: " << (int)round(-pose(1)/CELL_WIDTH) << ", Column: " << (int)round(pose(0)/CELL_WIDTH)
               << ", Heading: " << heading_to_string(pose(2))
@@ -112,38 +187,79 @@ void HatTrickController::doUpdate() {
               << ", Front Wall: " <<  ((dsFront->getValue() < WALL_THRESHOLD) ? "Y":"N")
               << ", Right Wall: " << ((dsRight->getValue() < WALL_THRESHOLD) ? "Y":"N")
               << "\n";
-    // Remove output to file for now
-    /*
-    outFile << motionPlanStep - 3
-              << "," << (int)round(-pose(1)/CELL_WIDTH) << "," << (int)round(pose(0)/CELL_WIDTH)
-              << "," << heading_to_string(pose(2))
-              << "," << ((dsLeft->getValue() < WALL_THRESHOLD) ? "Y":"N")
-              << "," <<  ((dsFront->getValue() < WALL_THRESHOLD) ? "Y":"N")
-              << "," << ((dsRight->getValue() < WALL_THRESHOLD) ? "Y":"N")
-              << "\n";
-    */
-    if (motionPlanStep < motionPlan.length()) {
-      // Advance to next step if one exists, else complete
-      action = actionList.find(motionPlan[motionPlanStep]);
-      switch(action) {
+
+    // Advance to next step
+    if (!mapped) {
+        action = map->getAction(dir);
+        switch(action) {
         case(0):
-          move_forward(target);
-          break;
+            move_forward(target);
+            break;
         case(1):
-          target(2) += M_PI/2;
-          break;
+            target(2) += M_PI/2;
+            break;
         case(2):
-          target(2) -= M_PI/2;
-          break;
-      } 
-      positioned = false;
-      rotated = false;
-    } else {
-      complete = true;
-      std::cout << MESSAGE_PREFIX << "Motion plan executed!\n";
+            target(2) -= M_PI/2;
+            break;
+        } 
     }
+    positioned = false;
+    rotated = false;
     idleCount = 0;
+  } else if (idleCount > 0 && !speedrun) {
+        speedrun = true;
+        motionPlanStep = 2;
+        map->changeTarget(start, start_dir, endGoal);
+        this->regenerateMotionPlan();
+        std::cout << "Motion Plan: " << motionPlan << "\n";
+        pose << (motionPlan[1] - '0')*CELL_WIDTH, 
+          -(motionPlan[0] - '0')*CELL_WIDTH, 
+          char_to_heading(motionPlan[2]);
+        target = pose;
+        kp = 15;
+        kpw = 2.5; // multiplier on bearing error
+        acceptablePositionError = 0.015;
+        acceptableRotationError = 10*M_PI/180.0;
+        acceptableRotationError2 = 35*M_PI/180.0; // used for enabling forward movement to next target
+        kcamera = 0.05;
   }
+  if (idleCount > 0 && speedrun) {
+    do {
+      motionPlanStep++;
+      if (motionPlanStep < motionPlan.length()) {
+      // Advance to next step if one exists, else complete
+        action = actionList.find(motionPlan[motionPlanStep]);
+        bool lastF = false;
+        std::string key ("F");
+        std::size_t found = motionPlan.rfind(key);
+        if (found != std::string::npos && motionPlanStep == found) lastF = true;
+        switch(action) {
+          case(0):
+            target = targetCentre;
+            move_forward(targetCentre);
+            if (!lastF) target = (target+targetCentre)/2;
+            else target = targetCentre;
+            target(2) = targetCentre(2);
+            break;
+          case(1):
+            targetCentre(2) += M_PI/2;
+            continue;
+          case(2):
+            targetCentre(2) -= M_PI/2;
+            continue;
+        }
+      } else {
+          complete = true;
+          std::cout << MESSAGE_PREFIX << "Motion plan executed!\n";
+          break;
+      }
+    } while (action != 0);
+    positioned = false;
+    rotated = false;      
+    idleCount = 0;
+    this->updateWheelVelocities();
+  }
+  
   // Do not allow an overall w > 2pi/3 as it slips too much
   double magW = abs(-setLeftVelocity + setRightVelocity)/2;
   if (magW > MAX_OMEGA) {
@@ -238,36 +354,38 @@ void HatTrickController::updateStepCamera() {
       // Find columns and adjust x
       double eCamX = round((pose(0) - CELL_WIDTH/2 + seamOffset*cos(pose(2)))/CELL_WIDTH)*CELL_WIDTH;
       eCamX += CELL_WIDTH/2;
-      pose(0) += (eCamX - seamOffset*cos(pose(2)) - pose(0))*0.2;
+      pose(0) += (eCamX - seamOffset*cos(pose(2)) - pose(0))*kcamera;
     } else {
       // Find rows and adjust y
       double eCamY = round((pose(1) + CELL_WIDTH/2 + seamOffset*sin(pose(2)))/CELL_WIDTH)*CELL_WIDTH;
       eCamY -= CELL_WIDTH/2;
-      pose(1) += (eCamY - seamOffset*sin(pose(2)) - pose(1))*0.2;
+      pose(1) += (eCamY - seamOffset*sin(pose(2)) - pose(1))*kcamera;
     }
-    pose(2) += atan2(rightRowPos-leftRowPos, rightColPos-leftColPos)*0.2; 
+    pose(2) += atan2(rightRowPos-leftRowPos, rightColPos-leftColPos)*kcamera; 
   }
 }
 
 void HatTrickController::updateStepDistanceSensors() {
   for(int i = 0; i < 8; i++) dsValues[i] = dsSensors[i]->getValue()*DS_RANGE/DS_MAX;
   // Update pose using distance sensors
-  double dsKRotation = 0.1;
-  double dsKPosition = 0.05;
   double errorRotation;
   Matrix<double, 2, 1> p1, p2;
   // skip if heading is not expected to be aligned
   // with cardinal directions to avoid corners being misidentified as edges.
   double headingTest = fmod(pose(2),M_PI/2);
   if (headingTest < 0) headingTest += M_PI/2;
-  for (int d = 0; d < 4 && abs(M_PI/4 - headingTest) > 35*M_PI/180.0; d++) {
+  for (int d = 0; d < 4 && abs(M_PI/4 - headingTest) > 37*M_PI/180.0; d++) {
     // can't estimate well with only one ray
     if (dsValues[2*d] ==  DS_RANGE || dsValues[2*d+1] == DS_RANGE) continue;
+    // can't estimate well if the wall is too close and being pushed by the robot
+    if (d == 0 && (dsValues[2*d] <= 0.06 || dsValues[2*d+1] <= 0.06)) continue;
     p1(0) = pose(0) + dsValues[2*d]*cos(pose(2) + dsRotation[2*d]);
     p1(1) = pose(1) + dsValues[2*d]*sin(pose(2) + dsRotation[2*d]);
     p2(0) = pose(0) + dsValues[2*d+1]*cos(pose(2) + dsRotation[2*d+1]);
     p2(1) = pose(1) + dsValues[2*d+1]*sin(pose(2) + dsRotation[2*d+1]);
     
+
+
     // Adjust rotation 
     errorRotation = atan2(p2(1)-p1(1), p2(0)-p1(0)) - M_PI/2 - dsRotation[2*d]/2 - dsRotation[2*d+1]/2 - pose(2);
     // Make error between -pi and pi
@@ -330,6 +448,7 @@ void HatTrickController::updateWheelVelocities() {
     if (offsetAngle > M_PI/2) offsetAngle -= M_PI;
     // Angle required to rotate robot to correct rotation
     double errorAngle = 0;
+    if ((target(2)-pose(2))*offsetAngle < 0 && abs(offsetAngle) > M_PI/3) offsetAngle*=-1;
     if (positioned) errorAngle = target(2) - pose(2);
     else errorAngle = offsetAngle;
     if (abs(errorAngle) < acceptableRotationError2) rotated = true;
@@ -431,4 +550,46 @@ bool HatTrickController::detectBlackLine(const unsigned char *image, int width, 
   // Something's wrong if more than an eighth of the camera is black
   if (numBlack > width*height/8) return false;
   return ((numBlack > width) && left && right) ? true:false;
+}
+
+Direction HatTrickController::heading_to_dir(double heading) {
+  Direction orientations[4] = {east, north, west, south};
+  int i = ((int) round(heading*2/M_PI))%4;
+  if (i < 0) i += 4;
+  return orientations[i]; 
+}
+
+Cell HatTrickController::getCell() {
+  Cell pos;
+  pos.row = -round(this->pose(1)/CELL_WIDTH)+1;
+  pos.col = round(this->pose(0)/CELL_WIDTH)+1;
+  return pos;
+}
+
+bool HatTrickController::visitedCell(Cell pos) {
+  for (unsigned int i = 0; i < visited.size(); i++) {
+    if (visited[i].row == pos.row && visited[i].col == pos.col) return true;
+  }
+  return false;
+}
+
+void HatTrickController::regenerateMotionPlan() {
+  auto paths = map->findShortestPaths(map->start_cell);
+  for (auto path_it = paths.begin(); path_it != paths.end(); path_it++) {
+    map->highlightPath(*path_it);
+    map->display();
+  } 
+  // Task 3a - Check for fewest turns
+  Path fewest_turns_path = paths[0];
+  for (auto path_it = paths.begin(); path_it != paths.end(); path_it++) {
+    if (numTurnsInPath(*path_it, map->start_dir) <
+        numTurnsInPath(fewest_turns_path, map->start_dir))
+    {
+      fewest_turns_path = *path_it;
+    }
+  }
+  map->highlightPath(fewest_turns_path);
+  map->display();
+  
+  this->motionPlan = generateMotionPlan(fewest_turns_path, map->start_cell, map->start_dir);
 }

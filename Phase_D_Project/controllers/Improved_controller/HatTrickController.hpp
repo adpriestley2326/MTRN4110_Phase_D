@@ -1,3 +1,4 @@
+#pragma once
 #include <webots/Robot.hpp>
 #include <webots/Keyboard.hpp>
 #include <webots/Motor.hpp>
@@ -15,6 +16,8 @@
 #include <cmath>
 
 #include <Eigen/Dense>
+#include "FloodFillMap.hpp"
+
 using namespace Eigen;
 using namespace webots;
 
@@ -47,12 +50,16 @@ class HatTrickController {
   double clamp(double v, double lo, double hi);
   bool detectBlackLine(const unsigned char *image, int width, int height);
   void manualDrive();
+  // Map-related
+  Cell getCell();
+  Direction heading_to_dir(double heading);
+  bool visitedCell(Cell pos);
 
   // Constants
   const std::string MOTION_PLAN_FILE_NAME = "../../PathPlan.txt";
   const std::string MOTION_EXECUTION_FILE_NAME = "../../MotionExecution.csv";
   const std::string MESSAGE_PREFIX = "[MTRN4110_PhaseD] ";
-  const int TIME_STEP = 64;
+  const int TIME_STEP = 32;
   const double CELL_WIDTH = 0.165;
   const double WHEEL_RADIUS = 0.02;
   const double AXLE_LENGTH = 0.056*1.003;
@@ -67,14 +74,15 @@ class HatTrickController {
   const unsigned char *groundCamImage;
 
   // Constants to tune
-  const double MAX_OMEGA = MAX_SPEED/3.0;
+  const double MAX_OMEGA = MAX_SPEED/2.0;
   const int WALL_THRESHOLD = 1200;
   
-  const double kp = 5;
-  const double kpw = 3; // multiplier on bearing error
-  const double acceptablePositionError = 0.01;
-  const double acceptableRotationError = 0.5*M_PI/180.0;
-  const double acceptableRotationError2 = 0.5*M_PI/180.0; // used for enabling forward movement to next target
+  double kp = 5;
+  double kpw = 3; // multiplier on bearing error
+  double acceptablePositionError = 0.01;
+  double acceptableRotationError = 0.5*M_PI/180.0;
+  double acceptableRotationError2 = 0.5*M_PI/180.0; // used for enabling forward movement to next target
+  double kcamera = 0.2;
   
   // EKF Stuff
   Matrix<double, 2, 2> ekfR;
@@ -92,6 +100,7 @@ class HatTrickController {
   std::string motionPlan;
   Matrix<double, 3, 1> pose;
   Matrix<double, 3, 1> target;
+  Matrix<double, 3, 1> targetCentre;
   Matrix<double, 3, 2> invKMatrix;
   double setLeftVelocity = 0;
   double setRightVelocity = 0;
@@ -99,6 +108,8 @@ class HatTrickController {
   unsigned int motionPlanStep = 2;
   int cycleCount = 0;
   int idleCount = 0;
+  bool mapped = false;
+  bool speedrun = false;
   bool complete = false;
   bool positioned = false; 
   bool rotated = false;
@@ -114,6 +125,13 @@ class HatTrickController {
   bool autopilot = true;
   double speed = 0;
   double yaw_speed =0;
-
-  //TODO: Include mapping/planning in here as a composition(?)
+  // For dynamic mapping
+  FloodFillMap *map;
+  std::vector<Cell> visited;
+  std::vector<Cell> toVisit;
+  Cell start;
+  Direction start_dir;
+  Cell endGoal;
+  Cell currentGoal;
+  void regenerateMotionPlan();
 };

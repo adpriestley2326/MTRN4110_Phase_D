@@ -186,6 +186,7 @@ void FloodFillMap::doFloodFill() {
 }
 
 void FloodFillMap::updateFloodFill(Cell initial) {
+  if (initial.row == target_cell.row && initial.col == target_cell.col) return;
   stack<Cell> c_stack;
   c_stack.push(initial);
   while (!c_stack.empty()) {
@@ -295,16 +296,16 @@ void FloodFillMap::display() {
   }
 }
 
-void FloodFillMap::addWall(Cell c, Direction dir) {
+bool FloodFillMap::addWall(Cell c, Direction dir) {
   // Check validity
   if (!validRowCol(c.row,c.col)) {
     cout << "Invalid row or col for addWall!\n";
-    return;
+    return false;
   }
   
   // Check if change is required
   if (wallIsPresent(c.row, c.col, dir)) {
-    return;
+    return false;
   }
   
   // Update wall in map
@@ -324,6 +325,38 @@ void FloodFillMap::addWall(Cell c, Direction dir) {
   // Update distance to target - modified floodfill
   //updateFloodFill(c);
   
-  return;
+  return true;
 }
 
+void FloodFillMap::resetValues() {
+  for (int r = 1; r < 6; r++) {
+    for (int c = 1; c < 10; c++) this->setCellValue(r, c, MAX_VAL);
+  }
+  setCellValue(target_cell.row, target_cell.col, 0);
+}
+
+void FloodFillMap::setPosition(Cell new_start, Direction dir) {
+  this->start_cell = new_start;
+  this->start_dir = dir;
+}
+
+void FloodFillMap::changeTarget(Cell new_start, Direction dir, Cell new_target) {
+  this->start_cell = new_start;
+  this->start_dir = dir;
+  this->target_cell = new_target;
+  this->resetValues();
+  this->doFloodFill();
+}
+
+int FloodFillMap::getAction(Direction d) {
+  int currentVal = getCellValue(start_cell.row, start_cell.col);
+  if (!wallIsPresent(start_cell.row, start_cell.col, d)) {
+    Cell neighbour = getNeighbourCell(start_cell.row, start_cell.col, d);
+    if (getCellValue(neighbour.row, neighbour.col) == currentVal-1) return 0;
+  }
+  if (!wallIsPresent(start_cell.row, start_cell.col, Direction((d+1)%4))) {
+    Cell neighbour = getNeighbourCell(start_cell.row, start_cell.col, Direction((d+1)%4));
+    if (getCellValue(neighbour.row, neighbour.col) == currentVal-1) return 2; 
+  }
+  return 1;
+}
