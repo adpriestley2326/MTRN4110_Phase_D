@@ -157,7 +157,8 @@ vector<Cell> FloodFillMap::getNeighbourCells(Cell c) {
   return neighbours;
 }  
 
-void FloodFillMap::doFloodFill() {
+// Adam's original floodfill algo
+/*void FloodFillMap::doFloodFill() {
   int curr_explored_val = 0;
   bool maze_val_changed = true;
   //int iteration = 1;
@@ -183,6 +184,16 @@ void FloodFillMap::doFloodFill() {
     curr_explored_val++;
   }
   return;
+}*/
+
+// Terry's recursive floodfill algo
+void FloodFillMap::doFloodFill(int r, int c, int dist) {
+  if (dist > getCellValue(r,c)) return;
+  setCellValue(r,c, dist);
+  if (!wallIsPresent(r,c,east)) doFloodFill(r, c+1, dist+1);
+  if (!wallIsPresent(r,c,north)) doFloodFill(r-1, c, dist+1);
+  if (!wallIsPresent(r,c,west)) doFloodFill(r, c-1, dist+1);
+  if (!wallIsPresent(r,c,south)) doFloodFill(r+1, c, dist+1);
 }
 
 void FloodFillMap::updateFloodFill(Cell initial) {
@@ -345,7 +356,7 @@ void FloodFillMap::changeTarget(Cell new_start, Direction dir, Cell new_target) 
   this->start_dir = dir;
   this->target_cell = new_target;
   this->resetValues();
-  this->doFloodFill();
+  this->doFloodFill(new_target.row, new_target.col, 0);
 }
 
 int FloodFillMap::getAction(Direction d) {

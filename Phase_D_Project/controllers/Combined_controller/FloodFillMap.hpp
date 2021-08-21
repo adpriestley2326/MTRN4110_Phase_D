@@ -43,7 +43,7 @@ class FloodFillMap {
     int setCellValue(int row, int col, int value);
     bool wallIsPresent(int row, int col, Direction dir);
     bool addWall(Cell c, Direction dir);
-    void doFloodFill(); 
+    void doFloodFill(int r, int c, int dist); 
     void updateFloodFill(Cell c);
     vector<Path> findShortestPaths(Cell c);
     void highlightPath(Path p);

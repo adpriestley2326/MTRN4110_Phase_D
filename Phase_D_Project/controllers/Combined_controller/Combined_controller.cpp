@@ -78,7 +78,8 @@ int main(int argc, char **argv) {
   
   // Task 2a - Do floodfill
   FloodFillMap map(char_map);
-  map.doFloodFill();
+  map.doFloodFill(map.target_cell.row, map.target_cell.col, 0);
+  //map.display();
   
   // Task 2b - Find & display shortest paths
   myPrint("Finding shortest paths...");
