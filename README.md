@@ -19,8 +19,11 @@ The Improved_World.wbt world file contains the following features
 - Improved speed run path planning
 
 ### Motion Tracking
-To make use of the motion tracking, a video recording of the robot must be made.
-TODO: further instructions
+To make use of the motion tracking, a video recording of the robot navigating the maze must be made. The video must be cropped so that the corners of the frame correspond to the inner corners of the maze. This will provide the most accurate coordinates for tracking motion.
+1. Save the video as 'MotionTracking.mp4'
+2. Open Object_tracking.ipynb in jupyter notebook
+3. Run all
+4. Find the resulting video as 'MotionTrackingResult.avi'
 
 
 As of 08/08/2021
