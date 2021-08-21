@@ -8,6 +8,10 @@
 5. Open Phase_D.ipynb in jupyter notebook
 6. Run all cells
 
+Note: If the anaconda prompt is complaining about ['webots.exe' is not a recognized interal or external command, operable program or batch file], try closing and reopening both the Anaconda Prompt and Webots. then if the problem persists, check that you have added the path correctly to the environment variables (and maybe try adding it to both user and system variable's path.
+
+
+
 ## Extra Features Run Instructions (Windows)
 ### Robot Controller improvements
 The Improved_World.wbt world file contains the following features
